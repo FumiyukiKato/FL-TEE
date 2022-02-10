@@ -1,0 +1,41 @@
+[package]
+name = "app"
+version = "1.0.0"
+authors = ["FumiyukiKato"]
+links = "encryption"
+build = "build.rs"
+edition = '2018'
+
+[[bin]]
+name = "secure-aggregation-server"
+path = "src/server.rs"
+
+[[bin]]
+name = "bench"
+path = "src/benchmark.rs"
+
+[dependencies]
+sgx_types = { rev = "v1.1.3", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+sgx_urts = { rev = "v1.1.3", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+hex = { version = "0.4" }
+tonic = "0.5"
+prost = "0.8"
+tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
+clap = "2.33.4"
+prettytable-rs = "^0.8"
+rand = "0.8.4"
+chrono = "0.4.6"
+
+[build-dependencies]
+tonic-build = "0.5"
+cc = "1.0"
+
+[patch.'https://github.com/apache/teaclave-sgx-sdk.git']
+sgx_types = { path = "../incubator-teaclave-sgx-sdk/sgx_types" }
+sgx_urts = { path = "../incubator-teaclave-sgx-sdk/sgx_urts" }
+
+[profile.release]
+opt-level = 3
+
+[features]
+default = []

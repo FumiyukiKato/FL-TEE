@@ -1,0 +1,4 @@
+Algorithm,num_of_parameters,num_of_sparse_parameters,num_of_clients,Load [s],Decryption [s],Aggregation [s],Total [s]
+[0]: path_oram,10000,100,100,0.00046550,0.00103837,11.60437298,11.60654736
+[1]: path_oram,10000,100,100,0.00002504,0.00021476,11.65444183,11.65487003
+Avg w/o [0] (1 trial): path_oram,10000,100,100,0.00002504,0.00021476,11.65444183,11.65487003

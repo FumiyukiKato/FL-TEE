@@ -1,0 +1,13 @@
+## Secure-aggregation component
+
+- grpc server at `0.0.0.0:50051`
+
+
+### One shot aggregation test
+1. `$ make`
+2. `bin/bench -v -a non_oblivious -c 100 -d 100000 -k 1000 -t 1`
+-c client size -d original parameter size -k sparsified parameter size
+
+
+
+Note that: Our experiment assumes the enclave and client has already performed a Remote Attestation handshake and established a shared secret key. In our source code, we use fixed keys for each client based on client ID and fixed IV. We think this is sufficient to observe the overhead caused by encryption for research purposes.

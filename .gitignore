@@ -1,0 +1,42 @@
+# local cofigurations
+.vscode/
+.python-version
+
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints
+
+log/*
+save/imgs/*
+save/objects/*
+dataset/*
+
+# exp/results/*
+exp/img/*
+
+!*/**/.gitkeep
+
+#object file
+*.o
+
+#library
+*.a
+
+#share object
+*.so
+*.so.*
+!src/libsgx_enc.so
+
+#generated proxy
+./**/*_u.c
+./**/*_u.h
+./**/*_t.c
+./**/*_t.h
+
+**/target
+
+# binary
+secure_aggregation/bin/*
+benchmark/sort
+
+.DS_Store

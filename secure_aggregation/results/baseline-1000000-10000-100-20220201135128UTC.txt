@@ -1,0 +1,4 @@
+Algorithm,num_of_parameters,num_of_sparse_parameters,num_of_clients,Load [s],Decryption [s],Aggregation [s],Total [s]
+[0]: baseline,1000000,10000,100,0.02800582,0.03369710,85.92838287,86.04315948
+[1]: baseline,1000000,10000,100,0.00447354,0.00801957,85.92498779,85.95022583
+Avg w/o [0] (1 trial): baseline,1000000,10000,100,0.00447354,0.00801957,85.92498779,85.95022583

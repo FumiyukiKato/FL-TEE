@@ -1,0 +1,4 @@
+Algorithm,num_of_parameters,num_of_sparse_parameters,num_of_clients,Load [s],Decryption [s],Aggregation [s],Total [s]
+[0]: index_set_privacy_r_10,10000000,1000000,100,5.16418552,6.36665964,9.73027420,24.17971611
+[1]: index_set_privacy_r_10,10000000,1000000,100,5.18422604,6.41671371,9.73787022,24.24569893
+Avg w/o [0] (1 trial): index_set_privacy_r_10,10000000,1000000,100,5.18422604,6.41671371,9.73787022,24.24569893

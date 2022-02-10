@@ -1,0 +1,22 @@
+syntax = "proto3";
+package secure_aggregation;
+
+service Aggregator {
+    rpc UpdateParameters (ParametersRequest) returns (ParametersReply);
+}
+
+message ParametersRequest {
+    bytes encrypted_parameters      = 1;
+    uint32 num_of_parameters        = 2;
+    uint32 num_of_sparse_parameters = 3;
+    repeated uint32 client_ids      = 4;
+    float sigma                     = 5;
+    float clipping                  = 6;
+    float alpha                     = 7;
+    uint32 aggregation_alg          = 8;
+}
+
+message ParametersReply {
+    repeated float updated_parameters = 1;
+    float execution_time              = 2;
+}

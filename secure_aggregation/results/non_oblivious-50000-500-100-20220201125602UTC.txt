@@ -1,0 +1,4 @@
+Algorithm,num_of_parameters,num_of_sparse_parameters,num_of_clients,Load [s],Decryption [s],Aggregation [s],Total [s]
+[0]: non_oblivious,50000,500,100,0.00140908,0.00245058,0.00015592,0.00755491
+[1]: non_oblivious,50000,500,100,0.00012060,0.00046048,0.00013286,0.00148828
+Avg w/o [0] (1 trial): non_oblivious,50000,500,100,0.00012060,0.00046048,0.00013286,0.00148828

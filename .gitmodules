@@ -1,0 +1,6 @@
+[submodule "secure_aggregation/-b"]
+	path = secure_aggregation/-b
+	url = https://github.com/apache/incubator-teaclave-sgx-sdk.git
+[submodule "secure_aggregation/incubator-teaclave-sgx-sdk"]
+	path = secure_aggregation/incubator-teaclave-sgx-sdk
+	url = https://github.com/apache/incubator-teaclave-sgx-sdk.git
