@@ -4,7 +4,7 @@
 
 
 ### One shot aggregation test
-1. `$ make`
+1. `make`
 2. `bin/bench -v -a non_oblivious -c 100 -d 100000 -k 1000 -t 1`   
 (-c client size -d original parameter size -k sparsified parameter size)
 

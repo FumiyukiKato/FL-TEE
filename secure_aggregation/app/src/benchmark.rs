@@ -203,6 +203,7 @@ fn main() {
         "baseline" => vec![3],
         "non_oblivious" => vec![4],
         "path_oram" => vec![5],
+        "advanced_simple" => vec![6],
         "all" => vec![1, 2, 3, 4, 5],
         _ => panic!("invalid option: aggregation_alg"),
     };
@@ -272,6 +273,7 @@ fn main() {
             3 => "baseline",
             4 => "non_oblivious",
             5 => "path_oram",
+            6 => "advanced_simple",
             _ => panic!("invalid option: aggregation_alg"),
         };
         if verbose {

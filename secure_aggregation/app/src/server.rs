@@ -130,7 +130,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     central_server.enclave_id = enclave.geteid();
-    central_server.verbose = false;
+    central_server.verbose = true;
     central_server.dp = true;
 
     println!("  Now GRPC Server is binded on {:?}", addr);
