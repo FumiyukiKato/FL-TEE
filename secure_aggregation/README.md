@@ -1,5 +1,6 @@
 ## Secure-aggregation component
-
+1. `make`
+2. `bin/secure-aggregation-server`   
 - grpc server at `0.0.0.0:50051`
 
 

@@ -55,9 +55,6 @@ use nips19::nips19;
 mod advanced;
 use advanced::advanced;
 
-mod advanced_simple;
-use advanced_simple::advanced_simple;
-
 mod baseline;
 use baseline::baseline;
 
@@ -204,13 +201,6 @@ pub extern "C" fn ecall_secure_aggregation(
             client_size,
         ),
         5 => path_oram_with_zerotrace(
-            aggregated_parameters,
-            &mut all_uploaded_parameters.weights,
-            client_size,
-            verbose,
-        ),
-        6 => advanced_simple(
-            num_of_sparse_parameters,
             aggregated_parameters,
             &mut all_uploaded_parameters.weights,
             client_size,

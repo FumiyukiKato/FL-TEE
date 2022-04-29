@@ -1,0 +1,4 @@
+Algorithm,num_of_parameters,num_of_sparse_parameters,num_of_clients,Load [s],Decryption [s],Aggregation [s],Total [s]
+[0]: advanced_old,100000,1000,100,0.00325336,0.00361081,0.16556175,0.17859979
+[1]: advanced_old,100000,1000,100,0.00053445,0.00096349,0.14029507,0.14348373
+Avg w/o [0] (1 trial): advanced_old,100000,1000,100,0.00053445,0.00096349,0.14029507,0.14348373

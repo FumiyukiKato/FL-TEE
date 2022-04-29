@@ -25,7 +25,7 @@ def args_parser():
     
     # secure aggregation 
     parser.add_argument('--secure_agg',      action='store_true',    help='flag of secure aggregation with enclave')
-    parser.add_argument('--aggregation_alg', type=str, default=None, help='oblivious aggregation algorithm (default: None)', choices=['advanced', 'nips19', 'baseline', 'non_oblivious', 'path_oram', 'advanced_simple'])
+    parser.add_argument('--aggregation_alg', type=str, default=None, help='oblivious aggregation algorithm (default: None)', choices=['advanced', 'nips19', 'baseline', 'non_oblivious', 'path_oram'])
 
     # sparsification parameter
     parser.add_argument('--alpha',        type=float, default=None,  help='sparse rate (default: None)')
@@ -135,7 +135,5 @@ def get_aggregation_alg_code(aggregation_alg):
         return 4
     elif aggregation_alg == 'path_oram':
         return 5
-    elif aggregation_alg == 'advanced_simple':
-        return 6
     else:
         exit('Error: unrecognized model')
