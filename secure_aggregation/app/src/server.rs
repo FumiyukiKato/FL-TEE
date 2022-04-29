@@ -23,6 +23,7 @@ fn get_algorithm_name(code: u32) -> String {
         3 => "baseline",
         4 => "non_oblivious",
         5 => "path_oram",
+        6 => "advanced_simple",
         _ => panic!("aggregation algorithm is nothing"),
     }.to_string()
 }
