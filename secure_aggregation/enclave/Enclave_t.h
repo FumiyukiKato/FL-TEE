@@ -21,9 +21,11 @@ extern "C" {
 #endif
 
 sgx_status_t ecall_secure_aggregation(uint8_t* encrypted_parameters_data, size_t encrypted_parameters_size, size_t num_of_parameters, size_t num_of_sparse_parameters, uint32_t* client_ids, size_t client_size, float sigma, float clipping, float alpha, uint32_t aggregation_alg, float* updated_parameters_data, float* execution_time_results, uint8_t verbose, uint8_t dp);
+sgx_status_t ecall_client_size_optimized_secure_aggregation(size_t optimal_num_of_clients, uint8_t* encrypted_parameters_data_ptr, size_t num_of_parameters, size_t num_of_sparse_parameters, uint32_t* client_ids, size_t client_size, float sigma, float clipping, float alpha, float* updated_parameters_data, float* execution_time_results, uint8_t verbose, uint8_t dp);
 void t_global_init_ecall(uint64_t id, const uint8_t* path, size_t len);
 void t_global_exit_ecall(void);
 
+sgx_status_t SGX_CDECL ocall_load_next_data(sgx_status_t* retval, size_t current_cursor, uint8_t* encrypted_parameters_data_ptr, uint8_t* encrypted_parameters_data, size_t encrypted_parameters_size);
 sgx_status_t SGX_CDECL u_thread_set_event_ocall(int* retval, int* error, const void* tcs);
 sgx_status_t SGX_CDECL u_thread_wait_event_ocall(int* retval, int* error, const void* tcs, const struct timespec* timeout);
 sgx_status_t SGX_CDECL u_thread_set_multiple_events_ocall(int* retval, int* error, const void** tcss, int total);

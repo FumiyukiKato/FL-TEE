@@ -14,7 +14,10 @@ use std::fs::File;
 use chrono::Utc;
 
 mod ecalls;
-use ecalls::{ecall_secure_aggregation, init_enclave};
+use ecalls::{ecall_secure_aggregation, init_enclave, ecall_client_size_optimized_secure_aggregation};
+
+mod ocalls;
+use ocalls::{ocall_load_next_data};
 
 type SgxAesCtr128bitKeyT = [uint8_t; 16];
 extern "C" {
@@ -79,6 +82,7 @@ fn secure_aggregation(
     parameters: &Vec<(u32, Vec<(u32, f32)>)>,
     num_of_parameters: usize,
     num_of_sparse_parameters: usize,
+    optimal_num_of_clients: usize,
     eid: u64,
     verbose: bool,
     dp: bool,
@@ -99,34 +103,68 @@ fn secure_aggregation(
         );
     }
     let start = Instant::now();
-    let result = unsafe {
-        ecall_secure_aggregation(
-            eid,
-            &mut retval,
-            encrypted_parameters_data.as_ptr() as *const u8,
-            encrypted_parameters_data.len(),
-            num_of_parameters,
-            num_of_sparse_parameters,
-            client_ids.as_ptr() as *const u32,
-            client_ids.len(),
-            sigma,
-            clipping,
-            alpha,
-            aggregation_alg,
-            updated_parametes_data.as_ptr() as *mut f32,
-            execution_time_results.as_ptr() as *mut f32,
-            match verbose { false => 0u8, true => 1u8},
-            match dp { false => 0u8, true => 1u8},
-        )
-    };
-    match result {
-        sgx_status_t::SGX_SUCCESS => {
-            if verbose {
-                println!("[UNTRUSTED] ECALL Succes.");
+    if aggregation_alg == 6 {
+        let p = encrypted_parameters_data.as_ptr() as *const u8;
+        println!("pointer {:?}", p);
+        let result = unsafe {
+            ecall_client_size_optimized_secure_aggregation(
+                eid,
+                &mut retval,
+                optimal_num_of_clients,
+                encrypted_parameters_data.as_ptr() as *const u8,
+                num_of_parameters,
+                num_of_sparse_parameters,
+                client_ids.as_ptr() as *const u32,
+                client_ids.len(),
+                sigma,
+                clipping,
+                alpha,
+                updated_parametes_data.as_ptr() as *mut f32,
+                execution_time_results.as_ptr() as *mut f32,
+                match verbose { false => 0u8, true => 1u8},
+                match dp { false => 0u8, true => 1u8},
+            )
+        };
+        match result {
+            sgx_status_t::SGX_SUCCESS => {
+                if verbose {
+                    println!("[UNTRUSTED] ECALL Succes.");
+                }
+            }
+            _ => {
+                println!("[UNTRUSTED] Failed {}!", result.as_str());
             }
         }
-        _ => {
-            println!("[UNTRUSTED] Failed {}!", result.as_str());
+    } else {
+        let result = unsafe {
+            ecall_secure_aggregation(
+                eid,
+                &mut retval,
+                encrypted_parameters_data.as_ptr() as *const u8,
+                encrypted_parameters_data.len(),
+                num_of_parameters,
+                num_of_sparse_parameters,
+                client_ids.as_ptr() as *const u32,
+                client_ids.len(),
+                sigma,
+                clipping,
+                alpha,
+                aggregation_alg,
+                updated_parametes_data.as_ptr() as *mut f32,
+                execution_time_results.as_ptr() as *mut f32,
+                match verbose { false => 0u8, true => 1u8},
+                match dp { false => 0u8, true => 1u8},
+            )
+        };
+        match result {
+            sgx_status_t::SGX_SUCCESS => {
+                if verbose {
+                    println!("[UNTRUSTED] ECALL Succes.");
+                }
+            }
+            _ => {
+                println!("[UNTRUSTED] Failed {}!", result.as_str());
+            }
         }
     }
     let end = start.elapsed();
@@ -192,6 +230,10 @@ fn create_opts() -> App<'static, 'static> {
         .arg(Arg::with_name("dp")
             .help("Adding noise for DP or without noise")
             .long("dp"))
+        .arg(Arg::with_name("optimal_num_of_clients")
+            .help("For optimized memory method")
+            .long("optimal_num_of_clients")
+            .default_value("1000"))
 }
 
 
@@ -203,7 +245,8 @@ fn main() {
         "baseline" => vec![3],
         "non_oblivious" => vec![4],
         "path_oram" => vec![5],
-        "all" => vec![1, 2, 3, 4, 5],
+        "optimized" => vec![6],
+        "all" => vec![1, 2, 3, 4, 5, 6],
         _ => panic!("invalid option: aggregation_alg"),
     };
     let aggregation_alg: &str = opts.value_of("aggregation_alg").unwrap();
@@ -217,6 +260,8 @@ fn main() {
     let trial: u32 = opts.value_of("trial").unwrap().parse().unwrap();
     let verbose = opts.is_present("verbose") as bool;
     let dp = opts.is_present("dp") as bool;
+
+    let optimal_num_of_clients: usize = opts.value_of("optimal_num_of_clients").unwrap().parse().unwrap();
 
     println!("");
     println!(" ** Params ** ");
@@ -239,7 +284,7 @@ fn main() {
         // if verbose { println!("parameter {}: {:?}", i, parameter); }
         parameters.push((i as u32, parameter));
     }
-
+    
     let mut result_table = Table::new();
     result_table.add_row(row![
         "Algorithm",
@@ -272,6 +317,7 @@ fn main() {
             3 => "baseline",
             4 => "non_oblivious",
             5 => "path_oram",
+            6 => "optimized",
             _ => panic!("invalid option: aggregation_alg"),
         };
         if verbose {
@@ -281,7 +327,7 @@ fn main() {
         let mut averages: Vec<f32> = vec![0.0; TIME_KIND + 1];
         for i in 0..(trial + 1) {
             let (updated_parametes_data, execution_time_results) =
-                secure_aggregation(*aggregation_alg, sigma, clipping, alpha, &parameters, num_of_parameters, num_of_sparse_parameters, eid, verbose, dp);
+                secure_aggregation(*aggregation_alg, sigma, clipping, alpha, &parameters, num_of_parameters, num_of_sparse_parameters, optimal_num_of_clients, eid, verbose, dp);
             if verbose {
                 let sum = updated_parametes_data.iter().fold(0.0, |sum, x| sum + x);
                 println!(" ** Verification ** ");

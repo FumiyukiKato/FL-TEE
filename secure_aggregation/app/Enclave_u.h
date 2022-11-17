@@ -21,6 +21,10 @@
 extern "C" {
 #endif
 
+#ifndef OCALL_LOAD_NEXT_DATA_DEFINED__
+#define OCALL_LOAD_NEXT_DATA_DEFINED__
+sgx_status_t SGX_UBRIDGE(SGX_NOCONVENTION, ocall_load_next_data, (size_t current_cursor, uint8_t* encrypted_parameters_data_ptr, uint8_t* encrypted_parameters_data, size_t encrypted_parameters_size));
+#endif
 #ifndef U_THREAD_SET_EVENT_OCALL_DEFINED__
 #define U_THREAD_SET_EVENT_OCALL_DEFINED__
 int SGX_UBRIDGE(SGX_NOCONVENTION, u_thread_set_event_ocall, (int* error, const void* tcs));
@@ -263,6 +267,7 @@ int SGX_UBRIDGE(SGX_CDECL, sgx_thread_set_multiple_untrusted_events_ocall, (cons
 #endif
 
 sgx_status_t ecall_secure_aggregation(sgx_enclave_id_t eid, sgx_status_t* retval, uint8_t* encrypted_parameters_data, size_t encrypted_parameters_size, size_t num_of_parameters, size_t num_of_sparse_parameters, uint32_t* client_ids, size_t client_size, float sigma, float clipping, float alpha, uint32_t aggregation_alg, float* updated_parameters_data, float* execution_time_results, uint8_t verbose, uint8_t dp);
+sgx_status_t ecall_client_size_optimized_secure_aggregation(sgx_enclave_id_t eid, sgx_status_t* retval, size_t optimal_num_of_clients, uint8_t* encrypted_parameters_data_ptr, size_t num_of_parameters, size_t num_of_sparse_parameters, uint32_t* client_ids, size_t client_size, float sigma, float clipping, float alpha, float* updated_parameters_data, float* execution_time_results, uint8_t verbose, uint8_t dp);
 sgx_status_t t_global_init_ecall(sgx_enclave_id_t eid, uint64_t id, const uint8_t* path, size_t len);
 sgx_status_t t_global_exit_ecall(sgx_enclave_id_t eid);
 

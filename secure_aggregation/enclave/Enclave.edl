@@ -39,9 +39,30 @@ enclave {
             uint8_t verbose,
             uint8_t dp
         );
+
+        public sgx_status_t ecall_client_size_optimized_secure_aggregation(
+            size_t optimal_num_of_clients,
+            [user_check] uint8_t* encrypted_parameters_data_ptr,
+            size_t num_of_parameters,
+            size_t num_of_sparse_parameters,
+            [in, count=client_size] uint32_t* client_ids,
+            size_t client_size,
+            float sigma,
+            float clipping,
+            float alpha,
+            [out, count=num_of_parameters] float* updated_parameters_data,
+            [out, count=3] float* execution_time_results,
+            uint8_t verbose,
+            uint8_t dp
+        );
     };
     
     untrusted {
-        
+        sgx_status_t ocall_load_next_data(
+            size_t current_cursor,
+            [user_check] uint8_t* encrypted_parameters_data_ptr,
+            [out, count=encrypted_parameters_size] uint8_t* encrypted_parameters_data,
+            size_t encrypted_parameters_size
+        );
     };
 };

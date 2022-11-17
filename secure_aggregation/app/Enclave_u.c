@@ -19,11 +19,36 @@ typedef struct ms_ecall_secure_aggregation_t {
 	uint8_t ms_dp;
 } ms_ecall_secure_aggregation_t;
 
+typedef struct ms_ecall_client_size_optimized_secure_aggregation_t {
+	sgx_status_t ms_retval;
+	size_t ms_optimal_num_of_clients;
+	uint8_t* ms_encrypted_parameters_data_ptr;
+	size_t ms_num_of_parameters;
+	size_t ms_num_of_sparse_parameters;
+	uint32_t* ms_client_ids;
+	size_t ms_client_size;
+	float ms_sigma;
+	float ms_clipping;
+	float ms_alpha;
+	float* ms_updated_parameters_data;
+	float* ms_execution_time_results;
+	uint8_t ms_verbose;
+	uint8_t ms_dp;
+} ms_ecall_client_size_optimized_secure_aggregation_t;
+
 typedef struct ms_t_global_init_ecall_t {
 	uint64_t ms_id;
 	const uint8_t* ms_path;
 	size_t ms_len;
 } ms_t_global_init_ecall_t;
+
+typedef struct ms_ocall_load_next_data_t {
+	sgx_status_t ms_retval;
+	size_t ms_current_cursor;
+	uint8_t* ms_encrypted_parameters_data_ptr;
+	uint8_t* ms_encrypted_parameters_data;
+	size_t ms_encrypted_parameters_size;
+} ms_ocall_load_next_data_t;
 
 typedef struct ms_u_thread_set_event_ocall_t {
 	int ms_retval;
@@ -450,6 +475,14 @@ typedef struct ms_sgx_thread_set_multiple_untrusted_events_ocall_t {
 	const void** ms_waiters;
 	size_t ms_total;
 } ms_sgx_thread_set_multiple_untrusted_events_ocall_t;
+
+static sgx_status_t SGX_CDECL Enclave_ocall_load_next_data(void* pms)
+{
+	ms_ocall_load_next_data_t* ms = SGX_CAST(ms_ocall_load_next_data_t*, pms);
+	ms->ms_retval = ocall_load_next_data(ms->ms_current_cursor, ms->ms_encrypted_parameters_data_ptr, ms->ms_encrypted_parameters_data, ms->ms_encrypted_parameters_size);
+
+	return SGX_SUCCESS;
+}
 
 static sgx_status_t SGX_CDECL Enclave_u_thread_set_event_ocall(void* pms)
 {
@@ -933,10 +966,11 @@ static sgx_status_t SGX_CDECL Enclave_sgx_thread_set_multiple_untrusted_events_o
 
 static const struct {
 	size_t nr_ocall;
-	void * table[60];
+	void * table[61];
 } ocall_table_Enclave = {
-	60,
+	61,
 	{
+		(void*)Enclave_ocall_load_next_data,
 		(void*)Enclave_u_thread_set_event_ocall,
 		(void*)Enclave_u_thread_wait_event_ocall,
 		(void*)Enclave_u_thread_set_multiple_events_ocall,
@@ -1022,6 +1056,28 @@ sgx_status_t ecall_secure_aggregation(sgx_enclave_id_t eid, sgx_status_t* retval
 	return status;
 }
 
+sgx_status_t ecall_client_size_optimized_secure_aggregation(sgx_enclave_id_t eid, sgx_status_t* retval, size_t optimal_num_of_clients, uint8_t* encrypted_parameters_data_ptr, size_t num_of_parameters, size_t num_of_sparse_parameters, uint32_t* client_ids, size_t client_size, float sigma, float clipping, float alpha, float* updated_parameters_data, float* execution_time_results, uint8_t verbose, uint8_t dp)
+{
+	sgx_status_t status;
+	ms_ecall_client_size_optimized_secure_aggregation_t ms;
+	ms.ms_optimal_num_of_clients = optimal_num_of_clients;
+	ms.ms_encrypted_parameters_data_ptr = encrypted_parameters_data_ptr;
+	ms.ms_num_of_parameters = num_of_parameters;
+	ms.ms_num_of_sparse_parameters = num_of_sparse_parameters;
+	ms.ms_client_ids = client_ids;
+	ms.ms_client_size = client_size;
+	ms.ms_sigma = sigma;
+	ms.ms_clipping = clipping;
+	ms.ms_alpha = alpha;
+	ms.ms_updated_parameters_data = updated_parameters_data;
+	ms.ms_execution_time_results = execution_time_results;
+	ms.ms_verbose = verbose;
+	ms.ms_dp = dp;
+	status = sgx_ecall(eid, 1, &ocall_table_Enclave, &ms);
+	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
+	return status;
+}
+
 sgx_status_t t_global_init_ecall(sgx_enclave_id_t eid, uint64_t id, const uint8_t* path, size_t len)
 {
 	sgx_status_t status;
@@ -1029,14 +1085,14 @@ sgx_status_t t_global_init_ecall(sgx_enclave_id_t eid, uint64_t id, const uint8_
 	ms.ms_id = id;
 	ms.ms_path = path;
 	ms.ms_len = len;
-	status = sgx_ecall(eid, 1, &ocall_table_Enclave, &ms);
+	status = sgx_ecall(eid, 2, &ocall_table_Enclave, &ms);
 	return status;
 }
 
 sgx_status_t t_global_exit_ecall(sgx_enclave_id_t eid)
 {
 	sgx_status_t status;
-	status = sgx_ecall(eid, 2, &ocall_table_Enclave, NULL);
+	status = sgx_ecall(eid, 3, &ocall_table_Enclave, NULL);
 	return status;
 }
 

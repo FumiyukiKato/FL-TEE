@@ -24,6 +24,26 @@ extern "C" {
     ) -> sgx_status_t;
 }
 
+extern "C" {
+    pub fn ecall_client_size_optimized_secure_aggregation(
+        eid: sgx_enclave_id_t,
+        retval: *mut sgx_status_t,
+        optimal_num_of_clients: usize,
+        encrypted_parameters_data_ptr: *const u8,
+        num_of_parameters: usize,
+        num_of_sparse_parameters: usize,
+        client_ids: *const u32,
+        client_size: usize,
+        sigma: f32,
+        clipping: f32,
+        alpha: f32,
+        updated_parameters_data: *mut f32,
+        execution_time_results: *mut f32,
+        verbose: u8,
+        dp: u8,
+    ) -> sgx_status_t;
+}
+
 pub fn init_enclave() -> SgxResult<SgxEnclave> {
     let mut launch_token: sgx_launch_token_t = [0; 1024];
     let mut launch_token_updated: i32 = 0;

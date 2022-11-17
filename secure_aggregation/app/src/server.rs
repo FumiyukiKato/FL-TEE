@@ -13,7 +13,10 @@ pub mod secure_aggregation {
 }
 
 mod ecalls;
-use ecalls::{ecall_secure_aggregation, init_enclave};
+use ecalls::{ecall_secure_aggregation, init_enclave, ecall_client_size_optimized_secure_aggregation};
+
+mod ocalls;
+use ocalls::{ocall_load_next_data};
 
 const TIME_KIND: usize = 3;
 fn get_algorithm_name(code: u32) -> String {
@@ -23,6 +26,7 @@ fn get_algorithm_name(code: u32) -> String {
         3 => "baseline",
         4 => "non_oblivious",
         5 => "path_oram",
+        6 => "optimized",
         _ => panic!("aggregation algorithm is nothing"),
     }.to_string()
 }
@@ -51,6 +55,7 @@ impl Aggregator for CentralServer {
         let clipping = request.get_ref().clipping as f32;
         let alpha = request.get_ref().alpha as f32;
         let aggregation_alg = request.get_ref().aggregation_alg as u32;
+        let optimal_num_of_clients = 100; // TODO
         let updated_parametes_data: Vec<f32> = vec![0f32; num_of_parameters];
         let mut execution_time_results: Vec<f32> = vec![0f32; TIME_KIND];
         
@@ -63,34 +68,66 @@ impl Aggregator for CentralServer {
         }
 
         let start = Instant::now();
-        let result = unsafe {
-            ecall_secure_aggregation(
-                self.enclave_id,
-                &mut retval,
-                encrypted_parameters_data.as_ptr() as *const u8,
-                encrypted_parameters_data.len(),
-                num_of_parameters,
-                num_of_sparse_parameters,
-                client_ids.as_ptr() as *const u32,
-                client_ids.len(),
-                sigma,
-                clipping,
-                alpha,
-                aggregation_alg,
-                updated_parametes_data.as_ptr() as *mut f32,
-                execution_time_results.as_ptr() as *mut f32,
-                match self.verbose { false => 0u8, true => 1u8},
-                match self.dp { false => 0u8, true => 1u8},
-            )
-        };
-        match result {
-            sgx_status_t::SGX_SUCCESS => {
-                if self.verbose {
-                    println!("[UNTRUSTED] ECALL Succes.");
+        if aggregation_alg == 6 {
+            let result = unsafe {
+                ecall_client_size_optimized_secure_aggregation(
+                    self.enclave_id,
+                    &mut retval,
+                    optimal_num_of_clients,
+                    encrypted_parameters_data.as_ptr() as *const u8,
+                    num_of_parameters,
+                    num_of_sparse_parameters,
+                    client_ids.as_ptr() as *const u32,
+                    client_ids.len(),
+                    sigma,
+                    clipping,
+                    alpha,
+                    updated_parametes_data.as_ptr() as *mut f32,
+                    execution_time_results.as_ptr() as *mut f32,
+                    match self.verbose { false => 0u8, true => 1u8},
+                    match self.dp { false => 0u8, true => 1u8},
+                )
+            };
+            match result {
+                sgx_status_t::SGX_SUCCESS => {
+                    if self.verbose {
+                        println!("[UNTRUSTED] ECALL Succes.");
+                    }
+                }
+                _ => {
+                    println!("[UNTRUSTED] Failed {}!", result.as_str());
                 }
             }
-            _ => {
-                println!("[UNTRUSTED] Failed {}!", result.as_str());
+        } else {
+            let result = unsafe {
+                ecall_secure_aggregation(
+                    self.enclave_id,
+                    &mut retval,
+                    encrypted_parameters_data.as_ptr() as *const u8,
+                    encrypted_parameters_data.len(),
+                    num_of_parameters,
+                    num_of_sparse_parameters,
+                    client_ids.as_ptr() as *const u32,
+                    client_ids.len(),
+                    sigma,
+                    clipping,
+                    alpha,
+                    aggregation_alg,
+                    updated_parametes_data.as_ptr() as *mut f32,
+                    execution_time_results.as_ptr() as *mut f32,
+                    match self.verbose { false => 0u8, true => 1u8},
+                    match self.dp { false => 0u8, true => 1u8},
+                )
+            };
+            match result {
+                sgx_status_t::SGX_SUCCESS => {
+                    if self.verbose {
+                        println!("[UNTRUSTED] ECALL Succes.");
+                    }
+                }
+                _ => {
+                    println!("[UNTRUSTED] Failed {}!", result.as_str());
+                }
             }
         }
         let end = start.elapsed();
