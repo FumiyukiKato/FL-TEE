@@ -1,213 +1,35 @@
 #[macro_use]
 extern crate prettytable;
+extern crate rand;
 extern crate sgx_types;
 extern crate sgx_urts;
-extern crate rand;
 
+use chrono::Utc;
 use clap::{App, Arg};
 use prettytable::{Cell, Row, Table};
-use sgx_types::*;
-use std::time::Instant;
-use rand::{seq::IteratorRandom, SeedableRng};
 use rand::rngs::StdRng;
+use rand::{seq::IteratorRandom, SeedableRng};
+use sgx_types::*;
 use std::fs::File;
-use chrono::Utc;
+use std::iter::FromIterator;
+use std::time::Instant;
+use std::collections::{HashSet, HashMap};
+
+mod consts;
+use consts::*;
+
+mod utils;
+use utils::*;
 
 mod ecalls;
 use ecalls::{
-    ecall_secure_aggregation,
-    init_enclave,
-    ecall_client_size_optimized_secure_aggregation,
-    ecall_start_round,
-    ecall_fl_init,
+    ecall_client_size_optimized_secure_aggregation, ecall_fl_init, ecall_secure_aggregation,
+    ecall_start_round, init_enclave,
 };
 
 mod ocalls;
-use ocalls::{ocall_load_next_data};
-
-type SgxAesCtr128bitKeyT = [uint8_t; 16];
-extern "C" {
-    fn sgx_aes_ctr_encrypt(
-        p_key: *const SgxAesCtr128bitKeyT,
-        p_src: *const uint8_t,
-        src_len: uint32_t,
-        p_ctr: *const uint8_t,
-        ctr_inc_bits: uint32_t,
-        p_dst: *mut uint8_t,
-    ) -> u32;
-}
-
-const COUNTER_BLOCK: [u8; 16] = [0; 16];
-const SGXSSL_CTR_BITS: u32 = 128;
-
-const TIME_KIND: usize = 3;
-
-fn encrypt_to_flat_vec_u8(parameters: &Vec<(u32, Vec<(u32, f32)>)>) -> (Vec<u8>, Vec<u32>) {
-    let mut u8_vec_list: Vec<u8> = Vec::with_capacity(parameters.len() * parameters[0].1.len());
-    let mut client_ids = Vec::with_capacity(parameters.len());
-    parameters.iter().for_each(|(client_id, parameter)| {
-        // encrypt by session key as secure channel to enclave.
-        let enc = encypt_by_client_id(*client_id, parameter);
-        client_ids.push(*client_id);
-        u8_vec_list.extend(enc);
-    });
-    (u8_vec_list, client_ids)
-}
-
-fn encypt_by_client_id(client_id: u32, parameter: &Vec<(u32, f32)>) -> Vec<u8> {
-    let src_len: usize = parameter.len() * 8;
-    let mut u8_vec: Vec<u8> = Vec::with_capacity(src_len);
-    parameter.iter().for_each(|(idx, val)| {
-        u8_vec.extend(&idx.to_le_bytes());
-        u8_vec.extend(&val.to_le_bytes());
-    });
-
-    let mut shared_key: [u8; 16] = [0; 16];
-    shared_key[4..8].copy_from_slice(&client_id.to_be_bytes());
-    let counter_block: [u8; 16] = COUNTER_BLOCK;
-    let ctr_inc_bits: u32 = SGXSSL_CTR_BITS;
-    let mut encrypted_buf: Vec<u8> = vec![0; src_len];
-    unsafe {
-        sgx_aes_ctr_encrypt(
-            &shared_key,
-            u8_vec.as_ptr() as *const u8,
-            src_len as u32,
-            &counter_block as *const u8,
-            ctr_inc_bits,
-            encrypted_buf.as_mut_ptr(),
-        )
-    };
-    encrypted_buf
-}
-
-fn secure_aggregation(
-    aggregation_alg: u32,
-    sigma: f32,
-    clipping: f32,
-    alpha: f32,
-    parameters: &Vec<(u32, Vec<(u32, f32)>)>,
-    num_of_parameters: usize,
-    num_of_sparse_parameters: usize,
-    optimal_num_of_clients: usize,
-    sampling_ratio: f32,
-    eid: u64,
-    verbose: bool,
-    dp: bool,
-) -> (Vec<f32>, Vec<f32>) {
-    let mut retval = sgx_status_t::SGX_SUCCESS;
-
-    let (encrypted_parameters_data, client_ids) =
-        encrypt_to_flat_vec_u8(parameters);
-    let updated_parametes_data: Vec<f32> = vec![0f32; num_of_parameters];
-    let mut execution_time_results: Vec<f32> = vec![0f32; TIME_KIND];
-
-    if verbose {
-        println!(
-            "number of parameters: {}, number of sparse parameters: {}, number of clients: {}",
-            num_of_parameters,
-            num_of_sparse_parameters,
-            client_ids.len()
-        );
-    }
-
-    let mut result = unsafe {
-        ecall_fl_init(
-            eid,
-            &mut retval,
-            0,
-            client_ids.as_ptr() as *const u32,
-            client_ids.len(),
-            sigma,
-            clipping,
-            alpha,
-            sampling_ratio,
-            aggregation_alg,
-            match verbose { false => 0u8, true => 1u8},
-            match dp { false => 0u8, true => 1u8},
-        )
-    };
-
-    let sample_size = (sampling_ratio * client_ids.len() as f32) as usize;
-    let sampled_client_ids: Vec<u32> = vec![0u32; sample_size];
-    unsafe {
-        ecall_start_round(eid, &mut retval, 0, 0, sample_size, sampled_client_ids.as_ptr() as *mut u32)
-    };
-    println!("sampled client ids {:?}", sampled_client_ids);
-
-    let start = Instant::now();
-    if aggregation_alg == 6 {
-        let p = encrypted_parameters_data.as_ptr() as *const u8;
-        println!("pointer {:?}", p);
-        let result = unsafe {
-            ecall_client_size_optimized_secure_aggregation(
-                eid,
-                &mut retval,
-                optimal_num_of_clients,
-                encrypted_parameters_data.as_ptr() as *const u8,
-                num_of_parameters,
-                num_of_sparse_parameters,
-                sampled_client_ids.as_ptr() as *const u32,
-                sampled_client_ids.len(),
-                sigma,
-                clipping,
-                alpha,
-                updated_parametes_data.as_ptr() as *mut f32,
-                execution_time_results.as_ptr() as *mut f32,
-                match verbose { false => 0u8, true => 1u8},
-                match dp { false => 0u8, true => 1u8},
-            )
-        };
-        match result {
-            sgx_status_t::SGX_SUCCESS => {
-                if verbose {
-                    println!("[UNTRUSTED] ECALL Succes.");
-                }
-            }
-            _ => {
-                println!("[UNTRUSTED] Failed {}!", result.as_str());
-            }
-        }
-    } else {
-        let result = unsafe {
-            ecall_secure_aggregation(
-                eid,
-                &mut retval,
-                0,
-                0,
-                sampled_client_ids.as_ptr() as *const u32,
-                sampled_client_ids.len(),
-                encrypted_parameters_data.as_ptr() as *const u8,
-                encrypted_parameters_data.len(),
-                num_of_parameters,
-                num_of_sparse_parameters,
-                updated_parametes_data.as_ptr() as *mut f32,
-                execution_time_results.as_ptr() as *mut f32,
-            )
-        };
-        match result {
-            sgx_status_t::SGX_SUCCESS => {
-                if verbose {
-                    println!("[UNTRUSTED] ECALL Succes.");
-                }
-            }
-            _ => {
-                println!("[UNTRUSTED] Failed {}!", result.as_str());
-            }
-        }
-    }
-    let end = start.elapsed();
-
-    if verbose {
-        println!(
-            "Total execution_time :  {}.{:06} seconds",
-            end.as_secs(),
-            end.subsec_nanos() / 1_000
-        );
-    }
-    // if verbose { println!("updated_parametes : {:?}", updated_parametes_data); }
-    execution_time_results.push(end.as_secs_f32());
-    (updated_parametes_data, execution_time_results)
-}
+#[allow(unused_imports)]
+use ocalls::ocall_load_next_data;
 
 fn create_opts() -> App<'static, 'static> {
     App::new("Benchmark")
@@ -268,6 +90,149 @@ fn create_opts() -> App<'static, 'static> {
             .default_value("1000"))
 }
 
+fn one_shot_secure_aggregation(
+    aggregation_alg: u32,
+    sigma: f32,
+    clipping: f32,
+    alpha: f32,
+    parameters: &Vec<(u32, Vec<(u32, f32)>)>,
+    num_of_parameters: usize,
+    num_of_sparse_parameters: usize,
+    optimal_num_of_clients: usize,
+    sampling_ratio: f32,
+    eid: u64,
+    verbose: bool,
+    dp: bool,
+) -> Vec<f32> {
+    let fixed_fl_id = 0;
+    let fixed_round = 0;
+
+    let (encrypted_parameters_data, client_ids) = encrypt_to_flat_vec_u8(parameters);
+    let parameter_byte_size_per_client = encrypted_parameters_data.len() / client_ids.len();
+    let mut parameters_of_client_ids: HashMap<u32, Vec<u8>> = HashMap::new();
+    for (i, client_id) in client_ids.iter().enumerate() {
+        parameters_of_client_ids.insert(
+            *client_id, 
+            encrypted_parameters_data[(i*parameter_byte_size_per_client)..((i+1)*parameter_byte_size_per_client)].to_vec()
+        );
+    }
+
+    let updated_parametes_data: Vec<f32> = vec![0f32; num_of_parameters];
+    let mut execution_time_results: Vec<f32> = vec![0f32; TIME_KIND];
+
+    let mut retval = sgx_status_t::SGX_SUCCESS;
+    let mut result = unsafe {
+        ecall_fl_init(
+            eid,
+            &mut retval,
+            fixed_fl_id,
+            client_ids.as_ptr() as *const u32,
+            client_ids.len(),
+            num_of_parameters,
+            num_of_sparse_parameters,
+            sigma,
+            clipping,
+            alpha,
+            sampling_ratio,
+            aggregation_alg,
+            bool_to_u8(verbose),
+            bool_to_u8(dp),
+        )
+    };
+    if result != sgx_status_t::SGX_SUCCESS || retval != sgx_status_t::SGX_SUCCESS {
+        panic!("Error at ecall_fl_init")
+    }
+
+    let sample_size = (sampling_ratio * client_ids.len() as f32) as usize;
+    let sampled_client_ids: Vec<u32> = vec![0u32; sample_size];
+    result = unsafe {
+        ecall_start_round(
+            eid,
+            &mut retval,
+            fixed_fl_id,
+            fixed_round,
+            sample_size,
+            sampled_client_ids.as_ptr() as *mut u32,
+        )
+    };
+    if result != sgx_status_t::SGX_SUCCESS || retval != sgx_status_t::SGX_SUCCESS {
+        panic!("Error at ecall_start_round")
+    }
+    // println!("sampled ids {:?}", sampled_client_ids);
+
+    let uploaded_encrypted_data: Vec<u8> = sampled_client_ids.iter()
+        .map(|x| parameters_of_client_ids[x].clone())
+        .fold(vec![], |concated: Vec<u8>, new| [&concated[..], &new[..]].concat());
+
+    let start = Instant::now();
+    if aggregation_alg == 6 {
+        result = unsafe {
+            ecall_client_size_optimized_secure_aggregation(
+                eid,
+                &mut retval,
+                fixed_fl_id,
+                fixed_round,
+                optimal_num_of_clients,
+                sampled_client_ids.as_ptr() as *const u32,
+                sampled_client_ids.len(),
+                uploaded_encrypted_data.as_ptr() as *const u8,
+                num_of_parameters,
+                num_of_sparse_parameters,
+                aggregation_alg,
+                updated_parametes_data.as_ptr() as *mut f32,
+                execution_time_results.as_ptr() as *mut f32,
+            )
+        };
+        if result != sgx_status_t::SGX_SUCCESS || retval != sgx_status_t::SGX_SUCCESS {
+            panic!("Error at ecall_client_size_optimized_secure_aggregation")
+        }
+    } else {
+        result = unsafe {
+            ecall_secure_aggregation(
+                eid,
+                &mut retval,
+                fixed_fl_id,
+                fixed_round,
+                sampled_client_ids.as_ptr() as *const u32,
+                sampled_client_ids.len(),
+                uploaded_encrypted_data.as_ptr() as *const u8,
+                uploaded_encrypted_data.len(),
+                num_of_parameters,
+                num_of_sparse_parameters,
+                aggregation_alg,
+                updated_parametes_data.as_ptr() as *mut f32,
+                execution_time_results.as_ptr() as *mut f32,
+            )
+        };
+        if result != sgx_status_t::SGX_SUCCESS || retval != sgx_status_t::SGX_SUCCESS {
+            panic!("Error at ecall_secure_aggregation")
+        }
+    }
+    let end = start.elapsed();
+
+    if verbose {
+        print_total_execution_time(end.as_secs(), end.subsec_nanos() / 1_000)
+    }
+    // if verbose { println!("updated_parametes : {:?}", updated_parametes_data); }
+
+    let sampled_clients_set: HashSet<u32> = HashSet::from_iter(sampled_client_ids.iter().cloned());
+    let mut check_sum = 0.0;
+    parameters.iter().for_each(|(client_id, parameter)| {
+        if sampled_clients_set.contains(client_id) {
+            check_sum += parameter.iter().fold(0.0, |x, y| x + y.1);
+        }
+    });
+    check_sum /= sampled_clients_set.len() as f32;
+
+    let enclave_check_sum = updated_parametes_data.iter().fold(0.0, |sum, x| sum + x);
+
+    if verbose {
+        println!("[CheckSum] enclave: {} == raw: {}", enclave_check_sum, check_sum);
+    }
+
+    execution_time_results.push(end.as_secs_f32());
+    execution_time_results
+}
 
 fn main() {
     let opts = create_opts().get_matches();
@@ -284,7 +249,11 @@ fn main() {
     let aggregation_alg: &str = opts.value_of("aggregation_alg").unwrap();
     let num_of_clients: usize = opts.value_of("num_of_clients").unwrap().parse().unwrap();
     let num_of_parameters: usize = opts.value_of("num_of_parameters").unwrap().parse().unwrap();
-    let num_of_sparse_parameters = opts.value_of("num_of_sparse_parameters").unwrap().parse().unwrap();
+    let num_of_sparse_parameters = opts
+        .value_of("num_of_sparse_parameters")
+        .unwrap()
+        .parse()
+        .unwrap();
     let sigma: f32 = opts.value_of("sigma").unwrap().parse().unwrap();
     let clipping: f32 = opts.value_of("clipping").unwrap().parse().unwrap();
     let alpha: f32 = opts.value_of("alpha").unwrap().parse().unwrap();
@@ -294,30 +263,30 @@ fn main() {
     let verbose = opts.is_present("verbose") as bool;
     let dp = opts.is_present("dp") as bool;
 
-    let optimal_num_of_clients: usize = opts.value_of("optimal_num_of_clients").unwrap().parse().unwrap();
+    let optimal_num_of_clients: usize = opts
+        .value_of("optimal_num_of_clients")
+        .unwrap()
+        .parse()
+        .unwrap();
 
-    println!("");
-    println!(" ** Params ** ");
-    println!("    Aggregation algorithm = {}", aggregation_alg);
-    println!("    DP params (sigma, clipping, alpha) = ({}, {}, {})", sigma, clipping, alpha);
-    println!("    Number of Client = {}", num_of_clients);
-    println!("    Number of Parameter = {}, sparse parameter = {}", num_of_parameters, num_of_sparse_parameters);
+    print_fl_settings(
+        aggregation_alg.to_string(), sigma, clipping, alpha,
+        num_of_clients, sampling_ratio, num_of_parameters, num_of_sparse_parameters
+    );
 
     let seed: [u8; 32] = [13; 32];
     let mut rng: StdRng = SeedableRng::from_seed(seed);
-    let mut true_sum = 0.0;
     let mut parameters = Vec::<(u32, Vec<(u32, f32)>)>::with_capacity(num_of_clients);
     for i in 0..num_of_clients {
         let mut parameter = Vec::<(u32, f32)>::with_capacity(num_of_sparse_parameters);
         let sample = (0..num_of_parameters).choose_multiple(&mut rng, num_of_sparse_parameters);
         for idx in sample.iter() {
             parameter.push((*idx as u32, (*idx as f32) * 0.001));
-            true_sum += (*idx as f32) * 0.001;
         }
         // if verbose { println!("parameter {}: {:?}", i, parameter); }
         parameters.push((i as u32, parameter));
     }
-    
+
     let mut result_table = Table::new();
     result_table.add_row(row![
         "Algorithm",
@@ -330,15 +299,14 @@ fn main() {
         "Total [s]"
     ]);
 
-    println!("init_enclave...");
+    println!(" init_enclave...");
     let enclave = match init_enclave() {
         Ok(r) => {
             println!(" Init Enclave Successful {}!", r.geteid());
             r
         }
         Err(x) => {
-            println!(" Init Enclave Failed {}!", x.as_str());
-            panic!("")
+            panic!(" Init Enclave Failed {}!", x.as_str());
         }
     };
     let eid = enclave.geteid();
@@ -353,26 +321,28 @@ fn main() {
             6 => "optimized",
             _ => panic!("invalid option: aggregation_alg"),
         };
-        if verbose {
-            println!("aggregation_alg: {}", alg_name);
-        }
 
         let mut averages: Vec<f32> = vec![0.0; TIME_KIND + 1];
         for i in 0..(trial + 1) {
-            let (updated_parametes_data, execution_time_results) =
-                secure_aggregation(*aggregation_alg, sigma, clipping, alpha, &parameters, num_of_parameters, num_of_sparse_parameters, optimal_num_of_clients, sampling_ratio, eid, verbose, dp);
-            if verbose {
-                let sum = updated_parametes_data.iter().fold(0.0, |sum, x| sum + x);
-                println!(" ** Verification ** ");
-                println!(
-                    "    Sum of updated_parametes : {} == {} : True sum of updated_parametes",
-                    sum,
-                    true_sum / (num_of_clients as f32)
-                );
-            }
+            println!("------------------- start  {} / {} -------------------", i+1, trial + 1);
+            let execution_time_results = one_shot_secure_aggregation(
+                *aggregation_alg,
+                sigma,
+                clipping,
+                alpha,
+                &parameters,
+                num_of_parameters,
+                num_of_sparse_parameters,
+                optimal_num_of_clients,
+                sampling_ratio,
+                eid,
+                verbose,
+                dp,
+            );
+            println!("---------------------- end -----------------------");
 
             if i >= 1 {
-                // The result of the first iteration for each test is always discarded 
+                // The result of the first iteration for each test is always discarded
                 // because the instruction and data caches are not yet hot, thus the first iteration is always slower.
                 (0..averages.len()).for_each(|j| averages[j] += execution_time_results[j]);
             }
@@ -385,7 +355,10 @@ fn main() {
                         .collect::<Vec<String>>(),
                 );
                 row.insert_cell(0, Cell::new(format!("{}", num_of_clients).as_str()));
-                row.insert_cell(0, Cell::new(format!("{}", num_of_sparse_parameters).as_str()));
+                row.insert_cell(
+                    0,
+                    Cell::new(format!("{}", num_of_sparse_parameters).as_str()),
+                );
                 row.insert_cell(0, Cell::new(format!("{}", num_of_parameters).as_str()));
                 row.insert_cell(0, Cell::new(format!("[{}]: {}", i, alg_name).as_str()));
                 result_table.add_row(row);
@@ -400,7 +373,10 @@ fn main() {
                 .collect::<Vec<String>>(),
         );
         row.insert_cell(0, Cell::new(format!("{}", num_of_clients).as_str()));
-        row.insert_cell(0, Cell::new(format!("{}", num_of_sparse_parameters).as_str()));
+        row.insert_cell(
+            0,
+            Cell::new(format!("{}", num_of_sparse_parameters).as_str()),
+        );
         row.insert_cell(0, Cell::new(format!("{}", num_of_parameters).as_str()));
         row.insert_cell(
             0,
@@ -410,10 +386,12 @@ fn main() {
     }
     result_table.printstd();
 
-
     let text = Utc::now().format("%Y%m%d%H%M%S%Z").to_string();
-    let out = File::create(format!("results/{}-{}-{}-{}-{}.txt", 
-        aggregation_alg, num_of_parameters, num_of_sparse_parameters, num_of_clients, text)).expect("Faled to create output file");
+    let out = File::create(format!(
+        "results/{}-{}-{}-{}-{}.txt",
+        aggregation_alg, num_of_parameters, num_of_sparse_parameters, num_of_clients, text
+    ))
+    .expect("Faled to create output file");
     result_table.to_csv(out).expect("Faled to output file");
 
     enclave.destroy();

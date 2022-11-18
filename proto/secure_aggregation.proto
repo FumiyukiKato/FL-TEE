@@ -2,21 +2,42 @@ syntax = "proto3";
 package secure_aggregation;
 
 service Aggregator {
-    rpc UpdateParameters (ParametersRequest) returns (ParametersReply);
+    rpc Aggregate (AggregateRequestParameters) returns (AggregateResponseParameters);
+    rpc Start (StartRequestParameters) returns (StartResponseParameters);
 }
 
-message ParametersRequest {
-    bytes encrypted_parameters      = 1;
-    uint32 num_of_parameters        = 2;
-    uint32 num_of_sparse_parameters = 3;
-    repeated uint32 client_ids      = 4;
-    float sigma                     = 5;
-    float clipping                  = 6;
-    float alpha                     = 7;
-    uint32 aggregation_alg          = 8;
+message AggregateRequestParameters {
+    uint32 fl_id                    = 1;
+    uint32 round                    = 2;
+    bytes encrypted_parameters      = 3;
+    uint32 num_of_parameters        = 4;
+    uint32 num_of_sparse_parameters = 5;
+    uint32 optimal_num_of_clients   = 6;
+    uint32 aggregation_alg          = 7;
+    repeated uint32 client_ids      = 8;
 }
 
-message ParametersReply {
+message AggregateResponseParameters {
     repeated float updated_parameters = 1;
     float execution_time              = 2;
+    repeated uint32 client_ids        = 3;
+    uint32 round                      = 4;
+}
+
+message StartRequestParameters {
+    uint32 fl_id                    = 1;
+    repeated uint32 client_ids      = 2;
+    float sigma                     = 3;
+    float clipping                  = 4;
+    float alpha                     = 5;
+    float sampling_ratio            = 6;
+    uint32 aggregation_alg          = 7;
+    uint32 num_of_parameters        = 8;
+    uint32 num_of_sparse_parameters = 9;
+}
+
+message StartResponseParameters {
+    uint32 fl_id                    = 1;
+    uint32 round                    = 2;
+    repeated uint32 client_ids      = 3;
 }

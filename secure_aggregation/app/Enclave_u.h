@@ -266,10 +266,10 @@ int SGX_UBRIDGE(SGX_CDECL, sgx_thread_setwait_untrusted_events_ocall, (const voi
 int SGX_UBRIDGE(SGX_CDECL, sgx_thread_set_multiple_untrusted_events_ocall, (const void** waiters, size_t total));
 #endif
 
-sgx_status_t ecall_secure_aggregation(sgx_enclave_id_t eid, sgx_status_t* retval, uint32_t id, uint32_t round, uint32_t* client_ids, size_t client_size, uint8_t* encrypted_parameters_data, size_t encrypted_parameters_size, size_t num_of_parameters, size_t num_of_sparse_parameters, float* updated_parameters_data, float* execution_time_results);
-sgx_status_t ecall_client_size_optimized_secure_aggregation(sgx_enclave_id_t eid, sgx_status_t* retval, size_t optimal_num_of_clients, uint8_t* encrypted_parameters_data_ptr, size_t num_of_parameters, size_t num_of_sparse_parameters, uint32_t* client_ids, size_t client_size, float sigma, float clipping, float alpha, float* updated_parameters_data, float* execution_time_results, uint8_t verbose, uint8_t dp);
-sgx_status_t ecall_fl_init(sgx_enclave_id_t eid, sgx_status_t* retval, uint32_t id, uint32_t* client_ids, size_t client_size, float sigma, float clipping, float alpha, float sampling_ratio, uint32_t aggregation_alg, uint8_t verbose, uint8_t dp);
-sgx_status_t ecall_start_round(sgx_enclave_id_t eid, sgx_status_t* retval, uint32_t id, uint32_t round, uint32_t sample_size, uint32_t* client_ids);
+sgx_status_t ecall_secure_aggregation(sgx_enclave_id_t eid, sgx_status_t* retval, uint32_t fl_id, uint32_t round, uint32_t* client_ids, size_t client_size, uint8_t* encrypted_parameters_data, size_t encrypted_parameters_size, size_t num_of_parameters, size_t num_of_sparse_parameters, uint32_t aggregation_alg, float* updated_parameters_data, float* execution_time_results);
+sgx_status_t ecall_client_size_optimized_secure_aggregation(sgx_enclave_id_t eid, sgx_status_t* retval, uint32_t fl_id, uint32_t round, size_t optimal_num_of_clients, uint32_t* client_ids, size_t client_size, uint8_t* encrypted_parameters_data_ptr, size_t num_of_parameters, size_t num_of_sparse_parameters, uint32_t aggregation_alg, float* updated_parameters_data, float* execution_time_results);
+sgx_status_t ecall_fl_init(sgx_enclave_id_t eid, sgx_status_t* retval, uint32_t fl_id, uint32_t* client_ids, size_t client_size, size_t num_of_parameters, size_t num_of_sparse_parameters, float sigma, float clipping, float alpha, float sampling_ratio, uint32_t aggregation_alg, uint8_t verbose, uint8_t dp);
+sgx_status_t ecall_start_round(sgx_enclave_id_t eid, sgx_status_t* retval, uint32_t fl_id, uint32_t round, uint32_t sample_size, uint32_t* client_ids);
 sgx_status_t t_global_init_ecall(sgx_enclave_id_t eid, uint64_t id, const uint8_t* path, size_t len);
 sgx_status_t t_global_exit_ecall(sgx_enclave_id_t eid);
 

@@ -3,7 +3,7 @@ extern crate sgx_types;
 extern crate sgx_urts;
 
 use secure_aggregation::aggregator_server::{Aggregator, AggregatorServer};
-use secure_aggregation::{ParametersReply, ParametersRequest};
+use secure_aggregation::{AggregateRequestParameters, AggregateResponseParameters, StartRequestParameters, StartResponseParameters};
 use sgx_types::*;
 use std::time::Instant;
 use tonic::{transport::Server, Request, Response, Status};
@@ -12,30 +12,22 @@ pub mod secure_aggregation {
     tonic::include_proto!("secure_aggregation"); // The string specified here must match the proto package name
 }
 
+mod utils;
+use utils::{get_algorithm_name, print_fl_settings, bool_to_u8, print_total_execution_time, print_fl_settings_for_each_round};
+
+mod consts;
+
 mod ecalls;
 use ecalls::{
-    ecall_secure_aggregation,
-    init_enclave,
-    ecall_client_size_optimized_secure_aggregation,
-    ecall_fl_init,
-    ecall_start_round
+    ecall_client_size_optimized_secure_aggregation, ecall_fl_init, ecall_secure_aggregation,
+    ecall_start_round, init_enclave,
 };
 
 mod ocalls;
-use ocalls::{ocall_load_next_data};
+#[allow(unused_imports)]
+use ocalls::ocall_load_next_data;
 
 const TIME_KIND: usize = 3;
-fn get_algorithm_name(code: u32) -> String {
-    match code {
-        1 => "advanced",
-        2 => "nips19",
-        3 => "baseline",
-        4 => "non_oblivious",
-        5 => "path_oram",
-        6 => "optimized",
-        _ => panic!("aggregation algorithm is nothing"),
-    }.to_string()
-}
 
 #[derive(Debug, Default)]
 pub struct CentralServer {
@@ -46,105 +38,169 @@ pub struct CentralServer {
 
 #[tonic::async_trait]
 impl Aggregator for CentralServer {
-    async fn update_parameters(
+    async fn start(
         &self,
-        request: Request<ParametersRequest>,
-    ) -> Result<Response<ParametersReply>, Status> {
-        println!("Got a request ..."); 
-
-        let mut retval = sgx_status_t::SGX_SUCCESS;
-        let encrypted_parameters_data = &request.get_ref().encrypted_parameters;
-        let num_of_parameters = request.get_ref().num_of_parameters as usize;
-        let num_of_sparse_parameters = request.get_ref().num_of_sparse_parameters as usize;
+        request: Request<StartRequestParameters>,
+    ) -> Result<Response<StartResponseParameters>, Status> {
+        println!("Got a start request ...");
+        let fl_id = request.get_ref().fl_id as u32;
         let client_ids = &request.get_ref().client_ids;
         let sigma = request.get_ref().sigma as f32;
         let clipping = request.get_ref().clipping as f32;
         let alpha = request.get_ref().alpha as f32;
+        let sampling_ratio = request.get_ref().sampling_ratio as f32;
         let aggregation_alg = request.get_ref().aggregation_alg as u32;
-        let optimal_num_of_clients = 100; // TODO
+        let num_of_parameters = request.get_ref().num_of_parameters as usize;
+        let num_of_sparse_parameters = request.get_ref().num_of_sparse_parameters as usize;
+
+        if self.verbose { print_fl_settings(get_algorithm_name(aggregation_alg), sigma, clipping, alpha, client_ids.len(), sampling_ratio, num_of_parameters, num_of_sparse_parameters); }
+
+        let mut retval = sgx_status_t::SGX_SUCCESS;
+        let mut result = unsafe {
+            ecall_fl_init(
+                self.enclave_id,
+                &mut retval,
+                fl_id,
+                client_ids.as_ptr() as *const u32,
+                client_ids.len(),
+                num_of_parameters,
+                num_of_sparse_parameters,
+                sigma,
+                clipping,
+                alpha,
+                sampling_ratio,
+                aggregation_alg,
+                bool_to_u8(self.verbose),
+                bool_to_u8(self.dp),
+            )
+        };
+        if result != sgx_status_t::SGX_SUCCESS || retval != sgx_status_t::SGX_SUCCESS {
+            panic!("Error at ecall_fl_init")
+        }
+
+        let sample_size = (sampling_ratio * client_ids.len() as f32) as usize;
+        let sampled_client_ids: Vec<u32> = vec![0u32; sample_size];
+        result = unsafe {
+            ecall_start_round(
+                self.enclave_id,
+                &mut retval,
+                fl_id,
+                0,
+                sample_size,
+                sampled_client_ids.as_ptr() as *mut u32,
+            )
+        };
+        if result != sgx_status_t::SGX_SUCCESS || retval != sgx_status_t::SGX_SUCCESS {
+            panic!("Error at ecall_start_round")
+        }
+
+        let reply = StartResponseParameters {
+            fl_id: fl_id,
+            round: 0,
+            client_ids: sampled_client_ids,
+        };
+
+        Ok(Response::new(reply))
+    }
+
+
+    async fn aggregate(
+        &self,
+        request: Request<AggregateRequestParameters>,
+    ) -> Result<Response<AggregateResponseParameters>, Status> {
+        println!("Got a aggregate request ...");
+
+        // request
+        let fl_id = request.get_ref().fl_id as u32;
+        let round = request.get_ref().round as u32;
+        let aggregation_alg = request.get_ref().aggregation_alg as u32;
+        let encrypted_parameters_data = &request.get_ref().encrypted_parameters;
+        let num_of_parameters = request.get_ref().num_of_parameters as usize;
+        let num_of_sparse_parameters = request.get_ref().num_of_sparse_parameters as usize;
+        let client_ids = &request.get_ref().client_ids;
+        let optimal_num_of_clients = request.get_ref().fl_id as usize;
+
+        if self.verbose { print_fl_settings_for_each_round(
+            fl_id, round, get_algorithm_name(aggregation_alg)) };
+        
+        // response
         let updated_parametes_data: Vec<f32> = vec![0f32; num_of_parameters];
         let mut execution_time_results: Vec<f32> = vec![0f32; TIME_KIND];
-        
-        if self.verbose {
-            println!(" ** Request Params ** ");
-            println!("    Aggregation algorithm = {}", get_algorithm_name(aggregation_alg));
-            println!("    DP params (sigma, clipping, alpha) = ({}, {}, {})", sigma, clipping, alpha);
-            println!("    Number of Client = {}", client_ids.len());
-            println!("    Number of Parameter = {}, sparse parameter = {}", num_of_parameters, num_of_sparse_parameters);
-        }
+
+        let mut retval = sgx_status_t::SGX_SUCCESS;
+        let mut result = sgx_status_t::SGX_SUCCESS;
 
         let start = Instant::now();
         if aggregation_alg == 6 {
-            let result = unsafe {
+            result = unsafe {
                 ecall_client_size_optimized_secure_aggregation(
                     self.enclave_id,
                     &mut retval,
+                    fl_id,
+                    round,
                     optimal_num_of_clients,
+                    client_ids.as_ptr() as *const u32,
+                    client_ids.len(),
                     encrypted_parameters_data.as_ptr() as *const u8,
                     num_of_parameters,
                     num_of_sparse_parameters,
-                    client_ids.as_ptr() as *const u32,
-                    client_ids.len(),
-                    sigma,
-                    clipping,
-                    alpha,
+                    aggregation_alg,
                     updated_parametes_data.as_ptr() as *mut f32,
-                    execution_time_results.as_ptr() as *mut f32,
-                    match self.verbose { false => 0u8, true => 1u8},
-                    match self.dp { false => 0u8, true => 1u8},
+                    execution_time_results.as_ptr() as *mut f32
                 )
             };
-            match result {
-                sgx_status_t::SGX_SUCCESS => {
-                    if self.verbose {
-                        println!("[UNTRUSTED] ECALL Succes.");
-                    }
-                }
-                _ => {
-                    println!("[UNTRUSTED] Failed {}!", result.as_str());
-                }
+            if result != sgx_status_t::SGX_SUCCESS || retval != sgx_status_t::SGX_SUCCESS {
+                panic!("Error at ecall_client_size_optimized_secure_aggregation")
             }
         } else {
-            let result = unsafe {
+            result = unsafe {
                 ecall_secure_aggregation(
                     self.enclave_id,
                     &mut retval,
-                    0,
-                    0,
+                    fl_id,
+                    round,
                     client_ids.as_ptr() as *const u32,
                     client_ids.len(),
                     encrypted_parameters_data.as_ptr() as *const u8,
                     encrypted_parameters_data.len(),
                     num_of_parameters,
                     num_of_sparse_parameters,
+                    aggregation_alg,
                     updated_parametes_data.as_ptr() as *mut f32,
                     execution_time_results.as_ptr() as *mut f32,
                 )
             };
-            match result {
-                sgx_status_t::SGX_SUCCESS => {
-                    if self.verbose {
-                        println!("[UNTRUSTED] ECALL Succes.");
-                    }
-                }
-                _ => {
-                    println!("[UNTRUSTED] Failed {}!", result.as_str());
-                }
+            if result != sgx_status_t::SGX_SUCCESS || retval != sgx_status_t::SGX_SUCCESS {
+                panic!("Error at ecall_secure_aggregation")
             }
         }
         let end = start.elapsed();
         execution_time_results.push(end.as_secs_f32());
-        if self.verbose {
-            println!(
-                "Total execution_time :  {}.{:06} seconds",
-                end.as_secs(),
-                end.subsec_nanos() / 1_000
-            );
+        if self.verbose { print_total_execution_time(end.as_secs(), end.subsec_nanos() / 1_000); }
+
+        // Assuming that the next round is the same number of participants.
+        let sample_size = client_ids.len();
+        let sampled_client_ids: Vec<u32> = vec![0u32; sample_size];
+        let next_round = round + 1;
+        result = unsafe {
+            ecall_start_round(
+                self.enclave_id,
+                &mut retval,
+                fl_id,
+                next_round,
+                sample_size,
+                sampled_client_ids.as_ptr() as *mut u32,
+            )
+        };
+        if result != sgx_status_t::SGX_SUCCESS || retval != sgx_status_t::SGX_SUCCESS {
+            panic!("Error at ecall_start_round")
         }
 
-        let reply = ParametersReply {
+        let reply = AggregateResponseParameters {
             updated_parameters: updated_parametes_data,
             execution_time: end.as_secs_f32(),
+            client_ids: sampled_client_ids,
+            round: next_round
         };
 
         Ok(Response::new(reply))

@@ -19,73 +19,80 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x18secure_aggregation.proto\x12\x12secure_aggregation\"\xcb\x01\n\x11ParametersRequest\x12\x1c\n\x14\x65ncrypted_parameters\x18\x01 \x01(\x0c\x12\x19\n\x11num_of_parameters\x18\x02 \x01(\r\x12 \n\x18num_of_sparse_parameters\x18\x03 \x01(\r\x12\x12\n\nclient_ids\x18\x04 \x03(\r\x12\r\n\x05sigma\x18\x05 \x01(\x02\x12\x10\n\x08\x63lipping\x18\x06 \x01(\x02\x12\r\n\x05\x61lpha\x18\x07 \x01(\x02\x12\x17\n\x0f\x61ggregation_alg\x18\x08 \x01(\r\"E\n\x0fParametersReply\x12\x1a\n\x12updated_parameters\x18\x01 \x03(\x02\x12\x16\n\x0e\x65xecution_time\x18\x02 \x01(\x02\x32l\n\nAggregator\x12^\n\x10UpdateParameters\x12%.secure_aggregation.ParametersRequest\x1a#.secure_aggregation.ParametersReplyb\x06proto3'
+  serialized_pb=b'\n\x18secure_aggregation.proto\x12\x12secure_aggregation\"\xfa\x01\n\x1a\x41ggregateRequestParameters\x12\r\n\x05\x66l_id\x18\x01 \x01(\r\x12\r\n\x05round\x18\x02 \x01(\r\x12\x1c\n\x14\x65ncrypted_parameters\x18\x03 \x01(\x0c\x12\x19\n\x11num_of_parameters\x18\x04 \x01(\r\x12 \n\x18num_of_sparse_parameters\x18\x05 \x01(\r\x12\x1e\n\x16optimal_num_of_clients\x18\x06 \x01(\r\x12\x17\n\x0f\x61ggregation_alg\x18\x07 \x01(\r\x12\x16\n\x0esampling_ratio\x18\x08 \x01(\r\x12\x12\n\nclient_ids\x18\t \x03(\r\"t\n\x1b\x41ggregateResponseParameters\x12\x1a\n\x12updated_parameters\x18\x01 \x03(\x02\x12\x16\n\x0e\x65xecution_time\x18\x02 \x01(\x02\x12\x12\n\nclient_ids\x18\x03 \x03(\r\x12\r\n\x05round\x18\x04 \x01(\r\"\xd9\x01\n\x16StartRequestParameters\x12\r\n\x05\x66l_id\x18\x01 \x01(\r\x12\x12\n\nclient_ids\x18\x02 \x03(\r\x12\r\n\x05sigma\x18\x03 \x01(\x02\x12\x10\n\x08\x63lipping\x18\x04 \x01(\x02\x12\r\n\x05\x61lpha\x18\x05 \x01(\x02\x12\x16\n\x0esampling_ratio\x18\x06 \x01(\x02\x12\x17\n\x0f\x61ggregation_alg\x18\x07 \x01(\r\x12\x19\n\x11num_of_parameters\x18\x08 \x01(\r\x12 \n\x18num_of_sparse_parameters\x18\t \x01(\r\"K\n\x17StartResponseParameters\x12\r\n\x05\x66l_id\x18\x01 \x01(\r\x12\r\n\x05round\x18\x02 \x01(\r\x12\x12\n\nclient_ids\x18\x03 \x03(\r2\xdc\x01\n\nAggregator\x12l\n\tAggregate\x12..secure_aggregation.AggregateRequestParameters\x1a/.secure_aggregation.AggregateResponseParameters\x12`\n\x05Start\x12*.secure_aggregation.StartRequestParameters\x1a+.secure_aggregation.StartResponseParametersb\x06proto3'
 )
 
 
 
 
-_PARAMETERSREQUEST = _descriptor.Descriptor(
-  name='ParametersRequest',
-  full_name='secure_aggregation.ParametersRequest',
+_AGGREGATEREQUESTPARAMETERS = _descriptor.Descriptor(
+  name='AggregateRequestParameters',
+  full_name='secure_aggregation.AggregateRequestParameters',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='encrypted_parameters', full_name='secure_aggregation.ParametersRequest.encrypted_parameters', index=0,
-      number=1, type=12, cpp_type=9, label=1,
-      has_default_value=False, default_value=b"",
+      name='fl_id', full_name='secure_aggregation.AggregateRequestParameters.fl_id', index=0,
+      number=1, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='num_of_parameters', full_name='secure_aggregation.ParametersRequest.num_of_parameters', index=1,
+      name='round', full_name='secure_aggregation.AggregateRequestParameters.round', index=1,
       number=2, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='num_of_sparse_parameters', full_name='secure_aggregation.ParametersRequest.num_of_sparse_parameters', index=2,
-      number=3, type=13, cpp_type=3, label=1,
+      name='encrypted_parameters', full_name='secure_aggregation.AggregateRequestParameters.encrypted_parameters', index=2,
+      number=3, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"",
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='num_of_parameters', full_name='secure_aggregation.AggregateRequestParameters.num_of_parameters', index=3,
+      number=4, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='client_ids', full_name='secure_aggregation.ParametersRequest.client_ids', index=3,
-      number=4, type=13, cpp_type=3, label=3,
-      has_default_value=False, default_value=[],
+      name='num_of_sparse_parameters', full_name='secure_aggregation.AggregateRequestParameters.num_of_sparse_parameters', index=4,
+      number=5, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='sigma', full_name='secure_aggregation.ParametersRequest.sigma', index=4,
-      number=5, type=2, cpp_type=6, label=1,
-      has_default_value=False, default_value=float(0),
+      name='optimal_num_of_clients', full_name='secure_aggregation.AggregateRequestParameters.optimal_num_of_clients', index=5,
+      number=6, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='clipping', full_name='secure_aggregation.ParametersRequest.clipping', index=5,
-      number=6, type=2, cpp_type=6, label=1,
-      has_default_value=False, default_value=float(0),
+      name='aggregation_alg', full_name='secure_aggregation.AggregateRequestParameters.aggregation_alg', index=6,
+      number=7, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='alpha', full_name='secure_aggregation.ParametersRequest.alpha', index=6,
-      number=7, type=2, cpp_type=6, label=1,
-      has_default_value=False, default_value=float(0),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-    _descriptor.FieldDescriptor(
-      name='aggregation_alg', full_name='secure_aggregation.ParametersRequest.aggregation_alg', index=7,
+      name='sampling_ratio', full_name='secure_aggregation.AggregateRequestParameters.sampling_ratio', index=7,
       number=8, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='client_ids', full_name='secure_aggregation.AggregateRequestParameters.client_ids', index=8,
+      number=9, type=13, cpp_type=3, label=3,
+      has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
@@ -102,29 +109,43 @@ _PARAMETERSREQUEST = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=49,
-  serialized_end=252,
+  serialized_end=299,
 )
 
 
-_PARAMETERSREPLY = _descriptor.Descriptor(
-  name='ParametersReply',
-  full_name='secure_aggregation.ParametersReply',
+_AGGREGATERESPONSEPARAMETERS = _descriptor.Descriptor(
+  name='AggregateResponseParameters',
+  full_name='secure_aggregation.AggregateResponseParameters',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='updated_parameters', full_name='secure_aggregation.ParametersReply.updated_parameters', index=0,
+      name='updated_parameters', full_name='secure_aggregation.AggregateResponseParameters.updated_parameters', index=0,
       number=1, type=2, cpp_type=6, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='execution_time', full_name='secure_aggregation.ParametersReply.execution_time', index=1,
+      name='execution_time', full_name='secure_aggregation.AggregateResponseParameters.execution_time', index=1,
       number=2, type=2, cpp_type=6, label=1,
       has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='client_ids', full_name='secure_aggregation.AggregateResponseParameters.client_ids', index=2,
+      number=3, type=13, cpp_type=3, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='round', full_name='secure_aggregation.AggregateResponseParameters.round', index=3,
+      number=4, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
@@ -140,27 +161,177 @@ _PARAMETERSREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=254,
-  serialized_end=323,
+  serialized_start=301,
+  serialized_end=417,
 )
 
-DESCRIPTOR.message_types_by_name['ParametersRequest'] = _PARAMETERSREQUEST
-DESCRIPTOR.message_types_by_name['ParametersReply'] = _PARAMETERSREPLY
+
+_STARTREQUESTPARAMETERS = _descriptor.Descriptor(
+  name='StartRequestParameters',
+  full_name='secure_aggregation.StartRequestParameters',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='fl_id', full_name='secure_aggregation.StartRequestParameters.fl_id', index=0,
+      number=1, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='client_ids', full_name='secure_aggregation.StartRequestParameters.client_ids', index=1,
+      number=2, type=13, cpp_type=3, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='sigma', full_name='secure_aggregation.StartRequestParameters.sigma', index=2,
+      number=3, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='clipping', full_name='secure_aggregation.StartRequestParameters.clipping', index=3,
+      number=4, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='alpha', full_name='secure_aggregation.StartRequestParameters.alpha', index=4,
+      number=5, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='sampling_ratio', full_name='secure_aggregation.StartRequestParameters.sampling_ratio', index=5,
+      number=6, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='aggregation_alg', full_name='secure_aggregation.StartRequestParameters.aggregation_alg', index=6,
+      number=7, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='num_of_parameters', full_name='secure_aggregation.StartRequestParameters.num_of_parameters', index=7,
+      number=8, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='num_of_sparse_parameters', full_name='secure_aggregation.StartRequestParameters.num_of_sparse_parameters', index=8,
+      number=9, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=420,
+  serialized_end=637,
+)
+
+
+_STARTRESPONSEPARAMETERS = _descriptor.Descriptor(
+  name='StartResponseParameters',
+  full_name='secure_aggregation.StartResponseParameters',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='fl_id', full_name='secure_aggregation.StartResponseParameters.fl_id', index=0,
+      number=1, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='round', full_name='secure_aggregation.StartResponseParameters.round', index=1,
+      number=2, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='client_ids', full_name='secure_aggregation.StartResponseParameters.client_ids', index=2,
+      number=3, type=13, cpp_type=3, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=639,
+  serialized_end=714,
+)
+
+DESCRIPTOR.message_types_by_name['AggregateRequestParameters'] = _AGGREGATEREQUESTPARAMETERS
+DESCRIPTOR.message_types_by_name['AggregateResponseParameters'] = _AGGREGATERESPONSEPARAMETERS
+DESCRIPTOR.message_types_by_name['StartRequestParameters'] = _STARTREQUESTPARAMETERS
+DESCRIPTOR.message_types_by_name['StartResponseParameters'] = _STARTRESPONSEPARAMETERS
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-ParametersRequest = _reflection.GeneratedProtocolMessageType('ParametersRequest', (_message.Message,), {
-  'DESCRIPTOR' : _PARAMETERSREQUEST,
+AggregateRequestParameters = _reflection.GeneratedProtocolMessageType('AggregateRequestParameters', (_message.Message,), {
+  'DESCRIPTOR' : _AGGREGATEREQUESTPARAMETERS,
   '__module__' : 'secure_aggregation_pb2'
-  # @@protoc_insertion_point(class_scope:secure_aggregation.ParametersRequest)
+  # @@protoc_insertion_point(class_scope:secure_aggregation.AggregateRequestParameters)
   })
-_sym_db.RegisterMessage(ParametersRequest)
+_sym_db.RegisterMessage(AggregateRequestParameters)
 
-ParametersReply = _reflection.GeneratedProtocolMessageType('ParametersReply', (_message.Message,), {
-  'DESCRIPTOR' : _PARAMETERSREPLY,
+AggregateResponseParameters = _reflection.GeneratedProtocolMessageType('AggregateResponseParameters', (_message.Message,), {
+  'DESCRIPTOR' : _AGGREGATERESPONSEPARAMETERS,
   '__module__' : 'secure_aggregation_pb2'
-  # @@protoc_insertion_point(class_scope:secure_aggregation.ParametersReply)
+  # @@protoc_insertion_point(class_scope:secure_aggregation.AggregateResponseParameters)
   })
-_sym_db.RegisterMessage(ParametersReply)
+_sym_db.RegisterMessage(AggregateResponseParameters)
+
+StartRequestParameters = _reflection.GeneratedProtocolMessageType('StartRequestParameters', (_message.Message,), {
+  'DESCRIPTOR' : _STARTREQUESTPARAMETERS,
+  '__module__' : 'secure_aggregation_pb2'
+  # @@protoc_insertion_point(class_scope:secure_aggregation.StartRequestParameters)
+  })
+_sym_db.RegisterMessage(StartRequestParameters)
+
+StartResponseParameters = _reflection.GeneratedProtocolMessageType('StartResponseParameters', (_message.Message,), {
+  'DESCRIPTOR' : _STARTRESPONSEPARAMETERS,
+  '__module__' : 'secure_aggregation_pb2'
+  # @@protoc_insertion_point(class_scope:secure_aggregation.StartResponseParameters)
+  })
+_sym_db.RegisterMessage(StartResponseParameters)
 
 
 
@@ -171,16 +342,26 @@ _AGGREGATOR = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=325,
-  serialized_end=433,
+  serialized_start=717,
+  serialized_end=937,
   methods=[
   _descriptor.MethodDescriptor(
-    name='UpdateParameters',
-    full_name='secure_aggregation.Aggregator.UpdateParameters',
+    name='Aggregate',
+    full_name='secure_aggregation.Aggregator.Aggregate',
     index=0,
     containing_service=None,
-    input_type=_PARAMETERSREQUEST,
-    output_type=_PARAMETERSREPLY,
+    input_type=_AGGREGATEREQUESTPARAMETERS,
+    output_type=_AGGREGATERESPONSEPARAMETERS,
+    serialized_options=None,
+    create_key=_descriptor._internal_create_key,
+  ),
+  _descriptor.MethodDescriptor(
+    name='Start',
+    full_name='secure_aggregation.Aggregator.Start',
+    index=1,
+    containing_service=None,
+    input_type=_STARTREQUESTPARAMETERS,
+    output_type=_STARTRESPONSEPARAMETERS,
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
   ),

@@ -3,7 +3,7 @@
 
 typedef struct ms_ecall_secure_aggregation_t {
 	sgx_status_t ms_retval;
-	uint32_t ms_id;
+	uint32_t ms_fl_id;
 	uint32_t ms_round;
 	uint32_t* ms_client_ids;
 	size_t ms_client_size;
@@ -11,32 +11,33 @@ typedef struct ms_ecall_secure_aggregation_t {
 	size_t ms_encrypted_parameters_size;
 	size_t ms_num_of_parameters;
 	size_t ms_num_of_sparse_parameters;
+	uint32_t ms_aggregation_alg;
 	float* ms_updated_parameters_data;
 	float* ms_execution_time_results;
 } ms_ecall_secure_aggregation_t;
 
 typedef struct ms_ecall_client_size_optimized_secure_aggregation_t {
 	sgx_status_t ms_retval;
+	uint32_t ms_fl_id;
+	uint32_t ms_round;
 	size_t ms_optimal_num_of_clients;
+	uint32_t* ms_client_ids;
+	size_t ms_client_size;
 	uint8_t* ms_encrypted_parameters_data_ptr;
 	size_t ms_num_of_parameters;
 	size_t ms_num_of_sparse_parameters;
-	uint32_t* ms_client_ids;
-	size_t ms_client_size;
-	float ms_sigma;
-	float ms_clipping;
-	float ms_alpha;
+	uint32_t ms_aggregation_alg;
 	float* ms_updated_parameters_data;
 	float* ms_execution_time_results;
-	uint8_t ms_verbose;
-	uint8_t ms_dp;
 } ms_ecall_client_size_optimized_secure_aggregation_t;
 
 typedef struct ms_ecall_fl_init_t {
 	sgx_status_t ms_retval;
-	uint32_t ms_id;
+	uint32_t ms_fl_id;
 	uint32_t* ms_client_ids;
 	size_t ms_client_size;
+	size_t ms_num_of_parameters;
+	size_t ms_num_of_sparse_parameters;
 	float ms_sigma;
 	float ms_clipping;
 	float ms_alpha;
@@ -48,7 +49,7 @@ typedef struct ms_ecall_fl_init_t {
 
 typedef struct ms_ecall_start_round_t {
 	sgx_status_t ms_retval;
-	uint32_t ms_id;
+	uint32_t ms_fl_id;
 	uint32_t ms_round;
 	uint32_t ms_sample_size;
 	uint32_t* ms_client_ids;
@@ -1051,11 +1052,11 @@ static const struct {
 		(void*)Enclave_sgx_thread_set_multiple_untrusted_events_ocall,
 	}
 };
-sgx_status_t ecall_secure_aggregation(sgx_enclave_id_t eid, sgx_status_t* retval, uint32_t id, uint32_t round, uint32_t* client_ids, size_t client_size, uint8_t* encrypted_parameters_data, size_t encrypted_parameters_size, size_t num_of_parameters, size_t num_of_sparse_parameters, float* updated_parameters_data, float* execution_time_results)
+sgx_status_t ecall_secure_aggregation(sgx_enclave_id_t eid, sgx_status_t* retval, uint32_t fl_id, uint32_t round, uint32_t* client_ids, size_t client_size, uint8_t* encrypted_parameters_data, size_t encrypted_parameters_size, size_t num_of_parameters, size_t num_of_sparse_parameters, uint32_t aggregation_alg, float* updated_parameters_data, float* execution_time_results)
 {
 	sgx_status_t status;
 	ms_ecall_secure_aggregation_t ms;
-	ms.ms_id = id;
+	ms.ms_fl_id = fl_id;
 	ms.ms_round = round;
 	ms.ms_client_ids = client_ids;
 	ms.ms_client_size = client_size;
@@ -1063,6 +1064,7 @@ sgx_status_t ecall_secure_aggregation(sgx_enclave_id_t eid, sgx_status_t* retval
 	ms.ms_encrypted_parameters_size = encrypted_parameters_size;
 	ms.ms_num_of_parameters = num_of_parameters;
 	ms.ms_num_of_sparse_parameters = num_of_sparse_parameters;
+	ms.ms_aggregation_alg = aggregation_alg;
 	ms.ms_updated_parameters_data = updated_parameters_data;
 	ms.ms_execution_time_results = execution_time_results;
 	status = sgx_ecall(eid, 0, &ocall_table_Enclave, &ms);
@@ -1070,35 +1072,35 @@ sgx_status_t ecall_secure_aggregation(sgx_enclave_id_t eid, sgx_status_t* retval
 	return status;
 }
 
-sgx_status_t ecall_client_size_optimized_secure_aggregation(sgx_enclave_id_t eid, sgx_status_t* retval, size_t optimal_num_of_clients, uint8_t* encrypted_parameters_data_ptr, size_t num_of_parameters, size_t num_of_sparse_parameters, uint32_t* client_ids, size_t client_size, float sigma, float clipping, float alpha, float* updated_parameters_data, float* execution_time_results, uint8_t verbose, uint8_t dp)
+sgx_status_t ecall_client_size_optimized_secure_aggregation(sgx_enclave_id_t eid, sgx_status_t* retval, uint32_t fl_id, uint32_t round, size_t optimal_num_of_clients, uint32_t* client_ids, size_t client_size, uint8_t* encrypted_parameters_data_ptr, size_t num_of_parameters, size_t num_of_sparse_parameters, uint32_t aggregation_alg, float* updated_parameters_data, float* execution_time_results)
 {
 	sgx_status_t status;
 	ms_ecall_client_size_optimized_secure_aggregation_t ms;
+	ms.ms_fl_id = fl_id;
+	ms.ms_round = round;
 	ms.ms_optimal_num_of_clients = optimal_num_of_clients;
+	ms.ms_client_ids = client_ids;
+	ms.ms_client_size = client_size;
 	ms.ms_encrypted_parameters_data_ptr = encrypted_parameters_data_ptr;
 	ms.ms_num_of_parameters = num_of_parameters;
 	ms.ms_num_of_sparse_parameters = num_of_sparse_parameters;
-	ms.ms_client_ids = client_ids;
-	ms.ms_client_size = client_size;
-	ms.ms_sigma = sigma;
-	ms.ms_clipping = clipping;
-	ms.ms_alpha = alpha;
+	ms.ms_aggregation_alg = aggregation_alg;
 	ms.ms_updated_parameters_data = updated_parameters_data;
 	ms.ms_execution_time_results = execution_time_results;
-	ms.ms_verbose = verbose;
-	ms.ms_dp = dp;
 	status = sgx_ecall(eid, 1, &ocall_table_Enclave, &ms);
 	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
 	return status;
 }
 
-sgx_status_t ecall_fl_init(sgx_enclave_id_t eid, sgx_status_t* retval, uint32_t id, uint32_t* client_ids, size_t client_size, float sigma, float clipping, float alpha, float sampling_ratio, uint32_t aggregation_alg, uint8_t verbose, uint8_t dp)
+sgx_status_t ecall_fl_init(sgx_enclave_id_t eid, sgx_status_t* retval, uint32_t fl_id, uint32_t* client_ids, size_t client_size, size_t num_of_parameters, size_t num_of_sparse_parameters, float sigma, float clipping, float alpha, float sampling_ratio, uint32_t aggregation_alg, uint8_t verbose, uint8_t dp)
 {
 	sgx_status_t status;
 	ms_ecall_fl_init_t ms;
-	ms.ms_id = id;
+	ms.ms_fl_id = fl_id;
 	ms.ms_client_ids = client_ids;
 	ms.ms_client_size = client_size;
+	ms.ms_num_of_parameters = num_of_parameters;
+	ms.ms_num_of_sparse_parameters = num_of_sparse_parameters;
 	ms.ms_sigma = sigma;
 	ms.ms_clipping = clipping;
 	ms.ms_alpha = alpha;
@@ -1111,11 +1113,11 @@ sgx_status_t ecall_fl_init(sgx_enclave_id_t eid, sgx_status_t* retval, uint32_t 
 	return status;
 }
 
-sgx_status_t ecall_start_round(sgx_enclave_id_t eid, sgx_status_t* retval, uint32_t id, uint32_t round, uint32_t sample_size, uint32_t* client_ids)
+sgx_status_t ecall_start_round(sgx_enclave_id_t eid, sgx_status_t* retval, uint32_t fl_id, uint32_t round, uint32_t sample_size, uint32_t* client_ids)
 {
 	sgx_status_t status;
 	ms_ecall_start_round_t ms;
-	ms.ms_id = id;
+	ms.ms_fl_id = fl_id;
 	ms.ms_round = round;
 	ms.ms_sample_size = sample_size;
 	ms.ms_client_ids = client_ids;

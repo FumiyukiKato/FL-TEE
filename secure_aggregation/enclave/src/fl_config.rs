@@ -2,9 +2,11 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::vec::Vec;
 
+type FLID = u32;
+
 #[derive(Clone, Default, Debug)]
 pub struct FLConfigMap {
-    pub configs: HashMap<u32, FLConfig>
+    pub configs: HashMap<FLID, FLConfig>
 }
 
 impl FLConfigMap {
@@ -12,8 +14,8 @@ impl FLConfigMap {
         FLConfigMap::default()
     }
 
-    pub fn add(& mut self, id: u32, config: FLConfig) {
-        self.configs.insert(id, config);
+    pub fn add(& mut self, fl_id: u32, config: FLConfig) {
+        self.configs.insert(fl_id, config);
     }
 }
 
@@ -21,6 +23,8 @@ impl FLConfigMap {
 pub struct FLConfig {
     pub client_ids: Vec<u32>,
     pub client_size: usize,
+    pub num_of_parameters: usize,
+    pub num_of_sparse_parameters: usize,
     pub sigma: f32,
     pub clipping: f32,
     pub alpha: f32,

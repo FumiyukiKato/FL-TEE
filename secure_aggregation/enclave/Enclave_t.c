@@ -29,7 +29,7 @@
 
 typedef struct ms_ecall_secure_aggregation_t {
 	sgx_status_t ms_retval;
-	uint32_t ms_id;
+	uint32_t ms_fl_id;
 	uint32_t ms_round;
 	uint32_t* ms_client_ids;
 	size_t ms_client_size;
@@ -37,32 +37,33 @@ typedef struct ms_ecall_secure_aggregation_t {
 	size_t ms_encrypted_parameters_size;
 	size_t ms_num_of_parameters;
 	size_t ms_num_of_sparse_parameters;
+	uint32_t ms_aggregation_alg;
 	float* ms_updated_parameters_data;
 	float* ms_execution_time_results;
 } ms_ecall_secure_aggregation_t;
 
 typedef struct ms_ecall_client_size_optimized_secure_aggregation_t {
 	sgx_status_t ms_retval;
+	uint32_t ms_fl_id;
+	uint32_t ms_round;
 	size_t ms_optimal_num_of_clients;
+	uint32_t* ms_client_ids;
+	size_t ms_client_size;
 	uint8_t* ms_encrypted_parameters_data_ptr;
 	size_t ms_num_of_parameters;
 	size_t ms_num_of_sparse_parameters;
-	uint32_t* ms_client_ids;
-	size_t ms_client_size;
-	float ms_sigma;
-	float ms_clipping;
-	float ms_alpha;
+	uint32_t ms_aggregation_alg;
 	float* ms_updated_parameters_data;
 	float* ms_execution_time_results;
-	uint8_t ms_verbose;
-	uint8_t ms_dp;
 } ms_ecall_client_size_optimized_secure_aggregation_t;
 
 typedef struct ms_ecall_fl_init_t {
 	sgx_status_t ms_retval;
-	uint32_t ms_id;
+	uint32_t ms_fl_id;
 	uint32_t* ms_client_ids;
 	size_t ms_client_size;
+	size_t ms_num_of_parameters;
+	size_t ms_num_of_sparse_parameters;
 	float ms_sigma;
 	float ms_clipping;
 	float ms_alpha;
@@ -74,7 +75,7 @@ typedef struct ms_ecall_fl_init_t {
 
 typedef struct ms_ecall_start_round_t {
 	sgx_status_t ms_retval;
-	uint32_t ms_id;
+	uint32_t ms_fl_id;
 	uint32_t ms_round;
 	uint32_t ms_sample_size;
 	uint32_t* ms_client_ids;
@@ -638,7 +639,7 @@ static sgx_status_t SGX_CDECL sgx_ecall_secure_aggregation(void* pms)
 		memset((void*)_in_execution_time_results, 0, _len_execution_time_results);
 	}
 
-	ms->ms_retval = ecall_secure_aggregation(ms->ms_id, ms->ms_round, _in_client_ids, _tmp_client_size, _in_encrypted_parameters_data, _tmp_encrypted_parameters_size, _tmp_num_of_parameters, ms->ms_num_of_sparse_parameters, _in_updated_parameters_data, _in_execution_time_results);
+	ms->ms_retval = ecall_secure_aggregation(ms->ms_fl_id, ms->ms_round, _in_client_ids, _tmp_client_size, _in_encrypted_parameters_data, _tmp_encrypted_parameters_size, _tmp_num_of_parameters, ms->ms_num_of_sparse_parameters, ms->ms_aggregation_alg, _in_updated_parameters_data, _in_execution_time_results);
 	if (_in_updated_parameters_data) {
 		if (memcpy_s(_tmp_updated_parameters_data, _len_updated_parameters_data, _in_updated_parameters_data, _len_updated_parameters_data)) {
 			status = SGX_ERROR_UNEXPECTED;
@@ -669,11 +670,11 @@ static sgx_status_t SGX_CDECL sgx_ecall_client_size_optimized_secure_aggregation
 	sgx_lfence();
 	ms_ecall_client_size_optimized_secure_aggregation_t* ms = SGX_CAST(ms_ecall_client_size_optimized_secure_aggregation_t*, pms);
 	sgx_status_t status = SGX_SUCCESS;
-	uint8_t* _tmp_encrypted_parameters_data_ptr = ms->ms_encrypted_parameters_data_ptr;
 	uint32_t* _tmp_client_ids = ms->ms_client_ids;
 	size_t _tmp_client_size = ms->ms_client_size;
 	size_t _len_client_ids = _tmp_client_size * sizeof(uint32_t);
 	uint32_t* _in_client_ids = NULL;
+	uint8_t* _tmp_encrypted_parameters_data_ptr = ms->ms_encrypted_parameters_data_ptr;
 	float* _tmp_updated_parameters_data = ms->ms_updated_parameters_data;
 	size_t _tmp_num_of_parameters = ms->ms_num_of_parameters;
 	size_t _len_updated_parameters_data = _tmp_num_of_parameters * sizeof(float);
@@ -751,7 +752,7 @@ static sgx_status_t SGX_CDECL sgx_ecall_client_size_optimized_secure_aggregation
 		memset((void*)_in_execution_time_results, 0, _len_execution_time_results);
 	}
 
-	ms->ms_retval = ecall_client_size_optimized_secure_aggregation(ms->ms_optimal_num_of_clients, _tmp_encrypted_parameters_data_ptr, _tmp_num_of_parameters, ms->ms_num_of_sparse_parameters, _in_client_ids, _tmp_client_size, ms->ms_sigma, ms->ms_clipping, ms->ms_alpha, _in_updated_parameters_data, _in_execution_time_results, ms->ms_verbose, ms->ms_dp);
+	ms->ms_retval = ecall_client_size_optimized_secure_aggregation(ms->ms_fl_id, ms->ms_round, ms->ms_optimal_num_of_clients, _in_client_ids, _tmp_client_size, _tmp_encrypted_parameters_data_ptr, _tmp_num_of_parameters, ms->ms_num_of_sparse_parameters, ms->ms_aggregation_alg, _in_updated_parameters_data, _in_execution_time_results);
 	if (_in_updated_parameters_data) {
 		if (memcpy_s(_tmp_updated_parameters_data, _len_updated_parameters_data, _in_updated_parameters_data, _len_updated_parameters_data)) {
 			status = SGX_ERROR_UNEXPECTED;
@@ -817,7 +818,7 @@ static sgx_status_t SGX_CDECL sgx_ecall_fl_init(void* pms)
 
 	}
 
-	ms->ms_retval = ecall_fl_init(ms->ms_id, _in_client_ids, _tmp_client_size, ms->ms_sigma, ms->ms_clipping, ms->ms_alpha, ms->ms_sampling_ratio, ms->ms_aggregation_alg, ms->ms_verbose, ms->ms_dp);
+	ms->ms_retval = ecall_fl_init(ms->ms_fl_id, _in_client_ids, _tmp_client_size, ms->ms_num_of_parameters, ms->ms_num_of_sparse_parameters, ms->ms_sigma, ms->ms_clipping, ms->ms_alpha, ms->ms_sampling_ratio, ms->ms_aggregation_alg, ms->ms_verbose, ms->ms_dp);
 
 err:
 	if (_in_client_ids) free(_in_client_ids);
@@ -864,7 +865,7 @@ static sgx_status_t SGX_CDECL sgx_ecall_start_round(void* pms)
 		memset((void*)_in_client_ids, 0, _len_client_ids);
 	}
 
-	ms->ms_retval = ecall_start_round(ms->ms_id, ms->ms_round, _tmp_sample_size, _in_client_ids);
+	ms->ms_retval = ecall_start_round(ms->ms_fl_id, ms->ms_round, _tmp_sample_size, _in_client_ids);
 	if (_in_client_ids) {
 		if (memcpy_s(_tmp_client_ids, _len_client_ids, _in_client_ids, _len_client_ids)) {
 			status = SGX_ERROR_UNEXPECTED;

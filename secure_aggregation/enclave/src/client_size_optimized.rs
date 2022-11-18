@@ -18,22 +18,12 @@ pub fn client_size_optimized(
     let k = num_of_sparse_parameters;
     let n = client_size;
 
-    let start = Instant::now();
-    if verbose { println!("insert_initial_data"); }
     insert_initial_data(uploaded_params, d);
-    let end = start.elapsed();
-    if verbose { println!("insert_initial_data done:  {}.{:06} seconds", end.as_secs(), end.subsec_nanos() / 1_000); }
 
     // O((nk+d)(log(nk+d)^2))
-    let start = Instant::now();
-    if verbose { println!("oblivious_sort_idx"); }
     oblivious_sort_idx(uploaded_params);
-    let end = start.elapsed();
-    if verbose { println!("oblivious_sort_idx done:  {}.{:06} seconds", end.as_secs(), end.subsec_nanos() / 1_000); }
 
     // Oblivious folding O(nk)
-    let start = Instant::now();
-    if verbose { println!("oblivious folding"); }
     let mut pre_idx = uploaded_params[0].0;
     let mut pre_val = uploaded_params[0].1;
     let mut dummy_idx = u32::MAX;
@@ -71,16 +61,9 @@ pub fn client_size_optimized(
     uploaded_params[initialized_parameter_length - 1].0 = pre_idx;
     uploaded_params[initialized_parameter_length - 1].1 = pre_val;
 
-    let end = start.elapsed();
-    if verbose { println!("oblivious folding done:  {}.{:06} seconds", end.as_secs(), end.subsec_nanos() / 1_000); }
-
     // O((nk+d)(log(nk+d)^2))
-    let start = Instant::now();
-    if verbose { println!("second oblivious_sort_idx"); }
     oblivious_sort_idx(uploaded_params);
-    let end = start.elapsed();
-    if verbose { println!("second oblivious_sort_idx done:  {}.{:06} seconds", end.as_secs(), end.subsec_nanos() / 1_000); }
-    
+
     for i in 0..d {
         global_params[i] += uploaded_params[i].1;
     }

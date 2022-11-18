@@ -14,17 +14,28 @@ class AggregatorStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.UpdateParameters = channel.unary_unary(
-                '/secure_aggregation.Aggregator/UpdateParameters',
-                request_serializer=secure__aggregation__pb2.ParametersRequest.SerializeToString,
-                response_deserializer=secure__aggregation__pb2.ParametersReply.FromString,
+        self.Aggregate = channel.unary_unary(
+                '/secure_aggregation.Aggregator/Aggregate',
+                request_serializer=secure__aggregation__pb2.AggregateRequestParameters.SerializeToString,
+                response_deserializer=secure__aggregation__pb2.AggregateResponseParameters.FromString,
+                )
+        self.Start = channel.unary_unary(
+                '/secure_aggregation.Aggregator/Start',
+                request_serializer=secure__aggregation__pb2.StartRequestParameters.SerializeToString,
+                response_deserializer=secure__aggregation__pb2.StartResponseParameters.FromString,
                 )
 
 
 class AggregatorServicer(object):
     """Missing associated documentation comment in .proto file."""
 
-    def UpdateParameters(self, request, context):
+    def Aggregate(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Start(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -33,10 +44,15 @@ class AggregatorServicer(object):
 
 def add_AggregatorServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'UpdateParameters': grpc.unary_unary_rpc_method_handler(
-                    servicer.UpdateParameters,
-                    request_deserializer=secure__aggregation__pb2.ParametersRequest.FromString,
-                    response_serializer=secure__aggregation__pb2.ParametersReply.SerializeToString,
+            'Aggregate': grpc.unary_unary_rpc_method_handler(
+                    servicer.Aggregate,
+                    request_deserializer=secure__aggregation__pb2.AggregateRequestParameters.FromString,
+                    response_serializer=secure__aggregation__pb2.AggregateResponseParameters.SerializeToString,
+            ),
+            'Start': grpc.unary_unary_rpc_method_handler(
+                    servicer.Start,
+                    request_deserializer=secure__aggregation__pb2.StartRequestParameters.FromString,
+                    response_serializer=secure__aggregation__pb2.StartResponseParameters.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -49,7 +65,7 @@ class Aggregator(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def UpdateParameters(request,
+    def Aggregate(request,
             target,
             options=(),
             channel_credentials=None,
@@ -59,8 +75,25 @@ class Aggregator(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/secure_aggregation.Aggregator/UpdateParameters',
-            secure__aggregation__pb2.ParametersRequest.SerializeToString,
-            secure__aggregation__pb2.ParametersReply.FromString,
+        return grpc.experimental.unary_unary(request, target, '/secure_aggregation.Aggregator/Aggregate',
+            secure__aggregation__pb2.AggregateRequestParameters.SerializeToString,
+            secure__aggregation__pb2.AggregateResponseParameters.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def Start(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/secure_aggregation.Aggregator/Start',
+            secure__aggregation__pb2.StartRequestParameters.SerializeToString,
+            secure__aggregation__pb2.StartResponseParameters.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
