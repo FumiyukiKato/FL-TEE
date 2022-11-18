@@ -20,8 +20,10 @@
 extern "C" {
 #endif
 
-sgx_status_t ecall_secure_aggregation(uint8_t* encrypted_parameters_data, size_t encrypted_parameters_size, size_t num_of_parameters, size_t num_of_sparse_parameters, uint32_t* client_ids, size_t client_size, float sigma, float clipping, float alpha, uint32_t aggregation_alg, float* updated_parameters_data, float* execution_time_results, uint8_t verbose, uint8_t dp);
+sgx_status_t ecall_secure_aggregation(uint32_t id, uint32_t round, uint32_t* client_ids, size_t client_size, uint8_t* encrypted_parameters_data, size_t encrypted_parameters_size, size_t num_of_parameters, size_t num_of_sparse_parameters, float* updated_parameters_data, float* execution_time_results);
 sgx_status_t ecall_client_size_optimized_secure_aggregation(size_t optimal_num_of_clients, uint8_t* encrypted_parameters_data_ptr, size_t num_of_parameters, size_t num_of_sparse_parameters, uint32_t* client_ids, size_t client_size, float sigma, float clipping, float alpha, float* updated_parameters_data, float* execution_time_results, uint8_t verbose, uint8_t dp);
+sgx_status_t ecall_fl_init(uint32_t id, uint32_t* client_ids, size_t client_size, float sigma, float clipping, float alpha, float sampling_ratio, uint32_t aggregation_alg, uint8_t verbose, uint8_t dp);
+sgx_status_t ecall_start_round(uint32_t id, uint32_t round, uint32_t sample_size, uint32_t* client_ids);
 void t_global_init_ecall(uint64_t id, const uint8_t* path, size_t len);
 void t_global_exit_ecall(void);
 

@@ -4,7 +4,6 @@ use std::time::Instant;
 use std::untrusted::time::InstantEx;
 
 use crate::parameters::Weight;
-use crate::common::{average_params};
 use crate::oblivious_primitives::{o_swap, o_mov};
 
 

@@ -29,20 +29,16 @@
 
 typedef struct ms_ecall_secure_aggregation_t {
 	sgx_status_t ms_retval;
+	uint32_t ms_id;
+	uint32_t ms_round;
+	uint32_t* ms_client_ids;
+	size_t ms_client_size;
 	uint8_t* ms_encrypted_parameters_data;
 	size_t ms_encrypted_parameters_size;
 	size_t ms_num_of_parameters;
 	size_t ms_num_of_sparse_parameters;
-	uint32_t* ms_client_ids;
-	size_t ms_client_size;
-	float ms_sigma;
-	float ms_clipping;
-	float ms_alpha;
-	uint32_t ms_aggregation_alg;
 	float* ms_updated_parameters_data;
 	float* ms_execution_time_results;
-	uint8_t ms_verbose;
-	uint8_t ms_dp;
 } ms_ecall_secure_aggregation_t;
 
 typedef struct ms_ecall_client_size_optimized_secure_aggregation_t {
@@ -61,6 +57,28 @@ typedef struct ms_ecall_client_size_optimized_secure_aggregation_t {
 	uint8_t ms_verbose;
 	uint8_t ms_dp;
 } ms_ecall_client_size_optimized_secure_aggregation_t;
+
+typedef struct ms_ecall_fl_init_t {
+	sgx_status_t ms_retval;
+	uint32_t ms_id;
+	uint32_t* ms_client_ids;
+	size_t ms_client_size;
+	float ms_sigma;
+	float ms_clipping;
+	float ms_alpha;
+	float ms_sampling_ratio;
+	uint32_t ms_aggregation_alg;
+	uint8_t ms_verbose;
+	uint8_t ms_dp;
+} ms_ecall_fl_init_t;
+
+typedef struct ms_ecall_start_round_t {
+	sgx_status_t ms_retval;
+	uint32_t ms_id;
+	uint32_t ms_round;
+	uint32_t ms_sample_size;
+	uint32_t* ms_client_ids;
+} ms_ecall_start_round_t;
 
 typedef struct ms_t_global_init_ecall_t {
 	uint64_t ms_id;
@@ -511,14 +529,14 @@ static sgx_status_t SGX_CDECL sgx_ecall_secure_aggregation(void* pms)
 	sgx_lfence();
 	ms_ecall_secure_aggregation_t* ms = SGX_CAST(ms_ecall_secure_aggregation_t*, pms);
 	sgx_status_t status = SGX_SUCCESS;
-	uint8_t* _tmp_encrypted_parameters_data = ms->ms_encrypted_parameters_data;
-	size_t _tmp_encrypted_parameters_size = ms->ms_encrypted_parameters_size;
-	size_t _len_encrypted_parameters_data = _tmp_encrypted_parameters_size * sizeof(uint8_t);
-	uint8_t* _in_encrypted_parameters_data = NULL;
 	uint32_t* _tmp_client_ids = ms->ms_client_ids;
 	size_t _tmp_client_size = ms->ms_client_size;
 	size_t _len_client_ids = _tmp_client_size * sizeof(uint32_t);
 	uint32_t* _in_client_ids = NULL;
+	uint8_t* _tmp_encrypted_parameters_data = ms->ms_encrypted_parameters_data;
+	size_t _tmp_encrypted_parameters_size = ms->ms_encrypted_parameters_size;
+	size_t _len_encrypted_parameters_data = _tmp_encrypted_parameters_size * sizeof(uint8_t);
+	uint8_t* _in_encrypted_parameters_data = NULL;
 	float* _tmp_updated_parameters_data = ms->ms_updated_parameters_data;
 	size_t _tmp_num_of_parameters = ms->ms_num_of_parameters;
 	size_t _len_updated_parameters_data = _tmp_num_of_parameters * sizeof(float);
@@ -527,13 +545,13 @@ static sgx_status_t SGX_CDECL sgx_ecall_secure_aggregation(void* pms)
 	size_t _len_execution_time_results = 3 * sizeof(float);
 	float* _in_execution_time_results = NULL;
 
-	if (sizeof(*_tmp_encrypted_parameters_data) != 0 &&
-		(size_t)_tmp_encrypted_parameters_size > (SIZE_MAX / sizeof(*_tmp_encrypted_parameters_data))) {
+	if (sizeof(*_tmp_client_ids) != 0 &&
+		(size_t)_tmp_client_size > (SIZE_MAX / sizeof(*_tmp_client_ids))) {
 		return SGX_ERROR_INVALID_PARAMETER;
 	}
 
-	if (sizeof(*_tmp_client_ids) != 0 &&
-		(size_t)_tmp_client_size > (SIZE_MAX / sizeof(*_tmp_client_ids))) {
+	if (sizeof(*_tmp_encrypted_parameters_data) != 0 &&
+		(size_t)_tmp_encrypted_parameters_size > (SIZE_MAX / sizeof(*_tmp_encrypted_parameters_data))) {
 		return SGX_ERROR_INVALID_PARAMETER;
 	}
 
@@ -547,8 +565,8 @@ static sgx_status_t SGX_CDECL sgx_ecall_secure_aggregation(void* pms)
 		return SGX_ERROR_INVALID_PARAMETER;
 	}
 
-	CHECK_UNIQUE_POINTER(_tmp_encrypted_parameters_data, _len_encrypted_parameters_data);
 	CHECK_UNIQUE_POINTER(_tmp_client_ids, _len_client_ids);
+	CHECK_UNIQUE_POINTER(_tmp_encrypted_parameters_data, _len_encrypted_parameters_data);
 	CHECK_UNIQUE_POINTER(_tmp_updated_parameters_data, _len_updated_parameters_data);
 	CHECK_UNIQUE_POINTER(_tmp_execution_time_results, _len_execution_time_results);
 
@@ -557,24 +575,6 @@ static sgx_status_t SGX_CDECL sgx_ecall_secure_aggregation(void* pms)
 	//
 	sgx_lfence();
 
-	if (_tmp_encrypted_parameters_data != NULL && _len_encrypted_parameters_data != 0) {
-		if ( _len_encrypted_parameters_data % sizeof(*_tmp_encrypted_parameters_data) != 0)
-		{
-			status = SGX_ERROR_INVALID_PARAMETER;
-			goto err;
-		}
-		_in_encrypted_parameters_data = (uint8_t*)malloc(_len_encrypted_parameters_data);
-		if (_in_encrypted_parameters_data == NULL) {
-			status = SGX_ERROR_OUT_OF_MEMORY;
-			goto err;
-		}
-
-		if (memcpy_s(_in_encrypted_parameters_data, _len_encrypted_parameters_data, _tmp_encrypted_parameters_data, _len_encrypted_parameters_data)) {
-			status = SGX_ERROR_UNEXPECTED;
-			goto err;
-		}
-
-	}
 	if (_tmp_client_ids != NULL && _len_client_ids != 0) {
 		if ( _len_client_ids % sizeof(*_tmp_client_ids) != 0)
 		{
@@ -588,6 +588,24 @@ static sgx_status_t SGX_CDECL sgx_ecall_secure_aggregation(void* pms)
 		}
 
 		if (memcpy_s(_in_client_ids, _len_client_ids, _tmp_client_ids, _len_client_ids)) {
+			status = SGX_ERROR_UNEXPECTED;
+			goto err;
+		}
+
+	}
+	if (_tmp_encrypted_parameters_data != NULL && _len_encrypted_parameters_data != 0) {
+		if ( _len_encrypted_parameters_data % sizeof(*_tmp_encrypted_parameters_data) != 0)
+		{
+			status = SGX_ERROR_INVALID_PARAMETER;
+			goto err;
+		}
+		_in_encrypted_parameters_data = (uint8_t*)malloc(_len_encrypted_parameters_data);
+		if (_in_encrypted_parameters_data == NULL) {
+			status = SGX_ERROR_OUT_OF_MEMORY;
+			goto err;
+		}
+
+		if (memcpy_s(_in_encrypted_parameters_data, _len_encrypted_parameters_data, _tmp_encrypted_parameters_data, _len_encrypted_parameters_data)) {
 			status = SGX_ERROR_UNEXPECTED;
 			goto err;
 		}
@@ -620,7 +638,7 @@ static sgx_status_t SGX_CDECL sgx_ecall_secure_aggregation(void* pms)
 		memset((void*)_in_execution_time_results, 0, _len_execution_time_results);
 	}
 
-	ms->ms_retval = ecall_secure_aggregation(_in_encrypted_parameters_data, _tmp_encrypted_parameters_size, _tmp_num_of_parameters, ms->ms_num_of_sparse_parameters, _in_client_ids, _tmp_client_size, ms->ms_sigma, ms->ms_clipping, ms->ms_alpha, ms->ms_aggregation_alg, _in_updated_parameters_data, _in_execution_time_results, ms->ms_verbose, ms->ms_dp);
+	ms->ms_retval = ecall_secure_aggregation(ms->ms_id, ms->ms_round, _in_client_ids, _tmp_client_size, _in_encrypted_parameters_data, _tmp_encrypted_parameters_size, _tmp_num_of_parameters, ms->ms_num_of_sparse_parameters, _in_updated_parameters_data, _in_execution_time_results);
 	if (_in_updated_parameters_data) {
 		if (memcpy_s(_tmp_updated_parameters_data, _len_updated_parameters_data, _in_updated_parameters_data, _len_updated_parameters_data)) {
 			status = SGX_ERROR_UNEXPECTED;
@@ -635,8 +653,8 @@ static sgx_status_t SGX_CDECL sgx_ecall_secure_aggregation(void* pms)
 	}
 
 err:
-	if (_in_encrypted_parameters_data) free(_in_encrypted_parameters_data);
 	if (_in_client_ids) free(_in_client_ids);
+	if (_in_encrypted_parameters_data) free(_in_encrypted_parameters_data);
 	if (_in_updated_parameters_data) free(_in_updated_parameters_data);
 	if (_in_execution_time_results) free(_in_execution_time_results);
 	return status;
@@ -754,6 +772,111 @@ err:
 	return status;
 }
 
+static sgx_status_t SGX_CDECL sgx_ecall_fl_init(void* pms)
+{
+	CHECK_REF_POINTER(pms, sizeof(ms_ecall_fl_init_t));
+	//
+	// fence after pointer checks
+	//
+	sgx_lfence();
+	ms_ecall_fl_init_t* ms = SGX_CAST(ms_ecall_fl_init_t*, pms);
+	sgx_status_t status = SGX_SUCCESS;
+	uint32_t* _tmp_client_ids = ms->ms_client_ids;
+	size_t _tmp_client_size = ms->ms_client_size;
+	size_t _len_client_ids = _tmp_client_size * sizeof(uint32_t);
+	uint32_t* _in_client_ids = NULL;
+
+	if (sizeof(*_tmp_client_ids) != 0 &&
+		(size_t)_tmp_client_size > (SIZE_MAX / sizeof(*_tmp_client_ids))) {
+		return SGX_ERROR_INVALID_PARAMETER;
+	}
+
+	CHECK_UNIQUE_POINTER(_tmp_client_ids, _len_client_ids);
+
+	//
+	// fence after pointer checks
+	//
+	sgx_lfence();
+
+	if (_tmp_client_ids != NULL && _len_client_ids != 0) {
+		if ( _len_client_ids % sizeof(*_tmp_client_ids) != 0)
+		{
+			status = SGX_ERROR_INVALID_PARAMETER;
+			goto err;
+		}
+		_in_client_ids = (uint32_t*)malloc(_len_client_ids);
+		if (_in_client_ids == NULL) {
+			status = SGX_ERROR_OUT_OF_MEMORY;
+			goto err;
+		}
+
+		if (memcpy_s(_in_client_ids, _len_client_ids, _tmp_client_ids, _len_client_ids)) {
+			status = SGX_ERROR_UNEXPECTED;
+			goto err;
+		}
+
+	}
+
+	ms->ms_retval = ecall_fl_init(ms->ms_id, _in_client_ids, _tmp_client_size, ms->ms_sigma, ms->ms_clipping, ms->ms_alpha, ms->ms_sampling_ratio, ms->ms_aggregation_alg, ms->ms_verbose, ms->ms_dp);
+
+err:
+	if (_in_client_ids) free(_in_client_ids);
+	return status;
+}
+
+static sgx_status_t SGX_CDECL sgx_ecall_start_round(void* pms)
+{
+	CHECK_REF_POINTER(pms, sizeof(ms_ecall_start_round_t));
+	//
+	// fence after pointer checks
+	//
+	sgx_lfence();
+	ms_ecall_start_round_t* ms = SGX_CAST(ms_ecall_start_round_t*, pms);
+	sgx_status_t status = SGX_SUCCESS;
+	uint32_t* _tmp_client_ids = ms->ms_client_ids;
+	uint32_t _tmp_sample_size = ms->ms_sample_size;
+	size_t _len_client_ids = _tmp_sample_size * sizeof(uint32_t);
+	uint32_t* _in_client_ids = NULL;
+
+	if (sizeof(*_tmp_client_ids) != 0 &&
+		(size_t)_tmp_sample_size > (SIZE_MAX / sizeof(*_tmp_client_ids))) {
+		return SGX_ERROR_INVALID_PARAMETER;
+	}
+
+	CHECK_UNIQUE_POINTER(_tmp_client_ids, _len_client_ids);
+
+	//
+	// fence after pointer checks
+	//
+	sgx_lfence();
+
+	if (_tmp_client_ids != NULL && _len_client_ids != 0) {
+		if ( _len_client_ids % sizeof(*_tmp_client_ids) != 0)
+		{
+			status = SGX_ERROR_INVALID_PARAMETER;
+			goto err;
+		}
+		if ((_in_client_ids = (uint32_t*)malloc(_len_client_ids)) == NULL) {
+			status = SGX_ERROR_OUT_OF_MEMORY;
+			goto err;
+		}
+
+		memset((void*)_in_client_ids, 0, _len_client_ids);
+	}
+
+	ms->ms_retval = ecall_start_round(ms->ms_id, ms->ms_round, _tmp_sample_size, _in_client_ids);
+	if (_in_client_ids) {
+		if (memcpy_s(_tmp_client_ids, _len_client_ids, _in_client_ids, _len_client_ids)) {
+			status = SGX_ERROR_UNEXPECTED;
+			goto err;
+		}
+	}
+
+err:
+	if (_in_client_ids) free(_in_client_ids);
+	return status;
+}
+
 static sgx_status_t SGX_CDECL sgx_t_global_init_ecall(void* pms)
 {
 	CHECK_REF_POINTER(pms, sizeof(ms_t_global_init_ecall_t));
@@ -811,12 +934,14 @@ static sgx_status_t SGX_CDECL sgx_t_global_exit_ecall(void* pms)
 
 SGX_EXTERNC const struct {
 	size_t nr_ecall;
-	struct {void* ecall_addr; uint8_t is_priv; uint8_t is_switchless;} ecall_table[4];
+	struct {void* ecall_addr; uint8_t is_priv; uint8_t is_switchless;} ecall_table[6];
 } g_ecall_table = {
-	4,
+	6,
 	{
 		{(void*)(uintptr_t)sgx_ecall_secure_aggregation, 0, 0},
 		{(void*)(uintptr_t)sgx_ecall_client_size_optimized_secure_aggregation, 0, 0},
+		{(void*)(uintptr_t)sgx_ecall_fl_init, 0, 0},
+		{(void*)(uintptr_t)sgx_ecall_start_round, 0, 0},
 		{(void*)(uintptr_t)sgx_t_global_init_ecall, 0, 0},
 		{(void*)(uintptr_t)sgx_t_global_exit_ecall, 0, 0},
 	}
@@ -824,71 +949,71 @@ SGX_EXTERNC const struct {
 
 SGX_EXTERNC const struct {
 	size_t nr_ocall;
-	uint8_t entry_table[61][4];
+	uint8_t entry_table[61][6];
 } g_dyn_entry_table = {
 	61,
 	{
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
 	}
 };
 

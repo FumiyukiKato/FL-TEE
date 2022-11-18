@@ -14,7 +14,13 @@ use std::fs::File;
 use chrono::Utc;
 
 mod ecalls;
-use ecalls::{ecall_secure_aggregation, init_enclave, ecall_client_size_optimized_secure_aggregation};
+use ecalls::{
+    ecall_secure_aggregation,
+    init_enclave,
+    ecall_client_size_optimized_secure_aggregation,
+    ecall_start_round,
+    ecall_fl_init,
+};
 
 mod ocalls;
 use ocalls::{ocall_load_next_data};
@@ -83,6 +89,7 @@ fn secure_aggregation(
     num_of_parameters: usize,
     num_of_sparse_parameters: usize,
     optimal_num_of_clients: usize,
+    sampling_ratio: f32,
     eid: u64,
     verbose: bool,
     dp: bool,
@@ -102,6 +109,31 @@ fn secure_aggregation(
             client_ids.len()
         );
     }
+
+    let mut result = unsafe {
+        ecall_fl_init(
+            eid,
+            &mut retval,
+            0,
+            client_ids.as_ptr() as *const u32,
+            client_ids.len(),
+            sigma,
+            clipping,
+            alpha,
+            sampling_ratio,
+            aggregation_alg,
+            match verbose { false => 0u8, true => 1u8},
+            match dp { false => 0u8, true => 1u8},
+        )
+    };
+
+    let sample_size = (sampling_ratio * client_ids.len() as f32) as usize;
+    let sampled_client_ids: Vec<u32> = vec![0u32; sample_size];
+    unsafe {
+        ecall_start_round(eid, &mut retval, 0, 0, sample_size, sampled_client_ids.as_ptr() as *mut u32)
+    };
+    println!("sampled client ids {:?}", sampled_client_ids);
+
     let start = Instant::now();
     if aggregation_alg == 6 {
         let p = encrypted_parameters_data.as_ptr() as *const u8;
@@ -114,8 +146,8 @@ fn secure_aggregation(
                 encrypted_parameters_data.as_ptr() as *const u8,
                 num_of_parameters,
                 num_of_sparse_parameters,
-                client_ids.as_ptr() as *const u32,
-                client_ids.len(),
+                sampled_client_ids.as_ptr() as *const u32,
+                sampled_client_ids.len(),
                 sigma,
                 clipping,
                 alpha,
@@ -140,20 +172,16 @@ fn secure_aggregation(
             ecall_secure_aggregation(
                 eid,
                 &mut retval,
+                0,
+                0,
+                sampled_client_ids.as_ptr() as *const u32,
+                sampled_client_ids.len(),
                 encrypted_parameters_data.as_ptr() as *const u8,
                 encrypted_parameters_data.len(),
                 num_of_parameters,
                 num_of_sparse_parameters,
-                client_ids.as_ptr() as *const u32,
-                client_ids.len(),
-                sigma,
-                clipping,
-                alpha,
-                aggregation_alg,
                 updated_parametes_data.as_ptr() as *mut f32,
                 execution_time_results.as_ptr() as *mut f32,
-                match verbose { false => 0u8, true => 1u8},
-                match dp { false => 0u8, true => 1u8},
             )
         };
         match result {
@@ -218,6 +246,10 @@ fn create_opts() -> App<'static, 'static> {
             .long("alpha")
             .help("Sparse rate")
             .default_value("0.1"))
+        .arg(Arg::with_name("sampling_ratio")
+            .long("sampling_ratio")
+            .help("Sampling ratio of participants for each round")
+            .default_value("0.01"))
         .arg(Arg::with_name("trial")
             .help("Number of trials and show average")
             .short("t")
@@ -256,6 +288,7 @@ fn main() {
     let sigma: f32 = opts.value_of("sigma").unwrap().parse().unwrap();
     let clipping: f32 = opts.value_of("clipping").unwrap().parse().unwrap();
     let alpha: f32 = opts.value_of("alpha").unwrap().parse().unwrap();
+    let sampling_ratio: f32 = opts.value_of("sampling_ratio").unwrap().parse().unwrap();
 
     let trial: u32 = opts.value_of("trial").unwrap().parse().unwrap();
     let verbose = opts.is_present("verbose") as bool;
@@ -327,7 +360,7 @@ fn main() {
         let mut averages: Vec<f32> = vec![0.0; TIME_KIND + 1];
         for i in 0..(trial + 1) {
             let (updated_parametes_data, execution_time_results) =
-                secure_aggregation(*aggregation_alg, sigma, clipping, alpha, &parameters, num_of_parameters, num_of_sparse_parameters, optimal_num_of_clients, eid, verbose, dp);
+                secure_aggregation(*aggregation_alg, sigma, clipping, alpha, &parameters, num_of_parameters, num_of_sparse_parameters, optimal_num_of_clients, sampling_ratio, eid, verbose, dp);
             if verbose {
                 let sum = updated_parametes_data.iter().fold(0.0, |sum, x| sum + x);
                 println!(" ** Verification ** ");

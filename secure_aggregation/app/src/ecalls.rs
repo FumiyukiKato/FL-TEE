@@ -4,27 +4,45 @@ use sgx_urts::SgxEnclave;
 static ENCLAVE_FILE: &'static str = "bin/enclave.signed.so";
 
 extern "C" {
-    pub fn ecall_secure_aggregation(
+    pub fn ecall_fl_init(
         eid: sgx_enclave_id_t,
         retval: *mut sgx_status_t,
-        encrypted_parameters_data: *const u8,
-        encrypted_parameters_size: usize,
-        num_of_parameters: usize,
-        num_of_sparse_parameters: usize,
+        id: u32,
         client_ids: *const u32,
         client_size: usize,
         sigma: f32,
         clipping: f32,
         alpha: f32,
+        sampling_ratio: f32,
         aggregation_alg: u32,
-        updated_parameters_data: *mut f32,
-        execution_time_results: *mut f32,
         verbose: u8,
         dp: u8,
     ) -> sgx_status_t;
-}
 
-extern "C" {
+    pub fn ecall_start_round(
+        eid: sgx_enclave_id_t,
+        retval: *mut sgx_status_t,
+        id: u32,
+        round: u32,
+        sample_size: usize,
+        sampled_client_ids: *mut u32,
+    ) -> sgx_status_t;
+
+    pub fn ecall_secure_aggregation(
+        eid: sgx_enclave_id_t,
+        retval: *mut sgx_status_t,
+        id: u32,
+        round: u32,
+        client_ids: *const u32,
+        client_size: usize,
+        encrypted_parameters_data: *const u8,
+        encrypted_parameters_size: usize,
+        num_of_parameters: usize,
+        num_of_sparse_parameters: usize,
+        updated_parameters_data: *mut f32,
+        execution_time_results: *mut f32,
+    ) -> sgx_status_t;
+
     pub fn ecall_client_size_optimized_secure_aggregation(
         eid: sgx_enclave_id_t,
         retval: *mut sgx_status_t,

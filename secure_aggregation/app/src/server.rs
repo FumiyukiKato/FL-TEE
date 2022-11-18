@@ -13,7 +13,13 @@ pub mod secure_aggregation {
 }
 
 mod ecalls;
-use ecalls::{ecall_secure_aggregation, init_enclave, ecall_client_size_optimized_secure_aggregation};
+use ecalls::{
+    ecall_secure_aggregation,
+    init_enclave,
+    ecall_client_size_optimized_secure_aggregation,
+    ecall_fl_init,
+    ecall_start_round
+};
 
 mod ocalls;
 use ocalls::{ocall_load_next_data};
@@ -103,20 +109,16 @@ impl Aggregator for CentralServer {
                 ecall_secure_aggregation(
                     self.enclave_id,
                     &mut retval,
+                    0,
+                    0,
+                    client_ids.as_ptr() as *const u32,
+                    client_ids.len(),
                     encrypted_parameters_data.as_ptr() as *const u8,
                     encrypted_parameters_data.len(),
                     num_of_parameters,
                     num_of_sparse_parameters,
-                    client_ids.as_ptr() as *const u32,
-                    client_ids.len(),
-                    sigma,
-                    clipping,
-                    alpha,
-                    aggregation_alg,
                     updated_parametes_data.as_ptr() as *mut f32,
                     execution_time_results.as_ptr() as *mut f32,
-                    match self.verbose { false => 0u8, true => 1u8},
-                    match self.dp { false => 0u8, true => 1u8},
                 )
             };
             match result {

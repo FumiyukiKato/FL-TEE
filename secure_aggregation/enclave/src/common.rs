@@ -1,5 +1,5 @@
 use std::vec::Vec;
-use sgx_rand::{Rng, StdRng, SeedableRng};
+use sgx_rand::{Rng, StdRng, SeedableRng, sample};
 // use sgx_rand::distributions::Exp;
 use sgx_rand::distributions::{Normal, IndependentSample};
 use sgx_trts::trts::rsgx_read_rand;
@@ -8,6 +8,7 @@ use crate::oblivious_primitives::{o_mov, o_setb};
 
 
 use crate::parameters::Weight;
+
 
 #[inline]
 pub fn average_params(global_params: &mut [f32], client_size: usize) {
@@ -96,6 +97,13 @@ pub fn laplace_noise_vec(d: usize, k: usize, epsilon: f32, delta: f32, rng: &mut
     (noise_vec, cut_off_threshold)
 }
 
+#[inline]
+pub fn sample_client_ids(client_ids_vec: &Vec<u32>, size: usize) -> Vec<u32> {
+    let mut rng: StdRng = get_safe_random_seed();
+    let sample = sample(&mut rng, client_ids_vec.iter(), size);
+    return sample.into_iter().map(|x| *x).collect()
+}
+
 
 // #[inline]
 // pub fn exponential_noise_vec(d: usize, k: usize, epsilon: f32, delta: f32, rng: &mut StdRng) -> (Vec<f32>, f32) {
@@ -129,6 +137,7 @@ pub fn laplace_noise_vec(d: usize, k: usize, epsilon: f32, delta: f32, rng: &mut
 //     }
 //     (noise_vec, cut_off_threshold)
 // }
+
 
 // // https://github.com/IBM/discrete-gaussian-differential-privacy
 // #[inline]
