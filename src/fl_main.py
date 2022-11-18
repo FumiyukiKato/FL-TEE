@@ -18,7 +18,7 @@ from models import MLP, CNNMnist, CNNFashion_Mnist, CNNCifar, MLPPurchase100, Re
 from attack import Attacker, run_attack
 from option import args_parser, get_aggregation_alg_code, exp_details
 from sampling import client_iid
-from proto_client import call_grpc
+from proto_client import call_grpc_start, call_grpc_aggregate
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -39,6 +39,7 @@ if __name__ == '__main__':
     device = 'cuda' if args.gpu_id else 'cpu'
     
     is_secure_agg = bool(args.secure_agg)
+    fl_id = args.fl_id
 
     np.random.seed(args.seed)
     torch.manual_seed(args.seed + 1)
@@ -156,6 +157,19 @@ if __name__ == '__main__':
     if args.dp:
         orders = ([1.25, 1.5, 1.75, 2., 2.25, 2.5, 3., 3.5, 4., 4.5] +
                   list(range(5, 64)) + [128, 256, 512])
+        
+    if is_secure_agg:
+        fl_id, current_round, secure_sampled_client_ids = call_grpc_start(
+            fl_id,
+            target_client_ids,
+            args.sigma,
+            args.clipping,
+            args.alpha,
+            args.frac,
+            get_aggregation_alg_code(args.aggregation_alg),
+            num_of_params,
+            num_of_sparse_params,
+        )
 
     for epoch in range(args.epochs):
         print(f' | Global Training Round : {epoch + 1} |')
@@ -173,8 +187,11 @@ if __name__ == '__main__':
 
         global_model.train()
 
-        # choose client randomly for this round
-        idxs_users = client_iid(args.frac, args.num_users)
+        if is_secure_agg:
+            idxs_users = secure_sampled_client_ids
+        else:
+            # choose client randomly for this round
+            idxs_users = client_iid(args.frac, args.num_users)
 
         for idx in idxs_users:
             if args.local_skip:
@@ -220,15 +237,16 @@ if __name__ == '__main__':
                 encrypted_local_weight = encrypt_parameters(bytes_local_weight, client_id)
                 encrypted_parameters.extend(encrypted_local_weight)
 
-            flattend_aggregated_weights, execution_time = call_grpc(
+            flattend_aggregated_weights, execution_time, secure_sampled_client_ids, _ = call_grpc_aggregate(
+                fl_id,
+                epoch,
                 encrypted_parameters,
                 num_of_params,
                 num_of_sparse_params,
                 idxs_users,
-                args.sigma,
-                args.clipping,
-                args.alpha,
-                get_aggregation_alg_code(args.aggregation_alg))
+                get_aggregation_alg_code(args.aggregation_alg),
+                args.optimal_num_of_clients
+            )
 
             learnable_parameters = get_learnable_parameters(global_weights, buffer_names)
             aggregated_weights = recover_flattened(torch.Tensor(flattend_aggregated_weights), global_weights, learnable_parameters)

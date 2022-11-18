@@ -118,7 +118,7 @@ impl Aggregator for CentralServer {
         let num_of_parameters = request.get_ref().num_of_parameters as usize;
         let num_of_sparse_parameters = request.get_ref().num_of_sparse_parameters as usize;
         let client_ids = &request.get_ref().client_ids;
-        let optimal_num_of_clients = request.get_ref().fl_id as usize;
+        let optimal_num_of_clients = request.get_ref().optimal_num_of_clients as usize;
 
         if self.verbose { print_fl_settings_for_each_round(
             fl_id, round, get_algorithm_name(aggregation_alg)) };
@@ -226,7 +226,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     central_server.enclave_id = enclave.geteid();
     central_server.verbose = true;
-    central_server.dp = true;
+    central_server.dp = false;
 
     println!("  Now GRPC Server is binded on {:?}", addr);
     Server::builder()

@@ -578,7 +578,7 @@ pub extern "C" fn ecall_client_size_optimized_secure_aggregation(
             end.subsec_nanos() / 1_000
         );
     }
-
+    fl_config.increment_round();
     sgx_status_t::SGX_SUCCESS
 }
 

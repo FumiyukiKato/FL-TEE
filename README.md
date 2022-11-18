@@ -40,6 +40,10 @@ confirm setup server
 $ python src/fl_main.py --model=mlp --dataset=mnist --epochs=10 --seed=0 --frac=0.3 --num_users=100 --data_dist=IID --optimizer=sgd --alpha=0.1  --secure_agg --aggregation_alg=advanced -v
 ```
 
+```bash
+python src/fl_main.py --model=mlp --dataset=mnist --epochs=10 --seed=0 --frac=0.3 --num_users=100 --data_dist=IID --optimizer=sgd --alpha=0.1  --secure_agg --aggregation_alg=optimized --optimal_num_of_clients=10
+```
+
 #### options
 
 see `src/option.py` in detail

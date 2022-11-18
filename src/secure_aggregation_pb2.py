@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x18secure_aggregation.proto\x12\x12secure_aggregation\"\xfa\x01\n\x1a\x41ggregateRequestParameters\x12\r\n\x05\x66l_id\x18\x01 \x01(\r\x12\r\n\x05round\x18\x02 \x01(\r\x12\x1c\n\x14\x65ncrypted_parameters\x18\x03 \x01(\x0c\x12\x19\n\x11num_of_parameters\x18\x04 \x01(\r\x12 \n\x18num_of_sparse_parameters\x18\x05 \x01(\r\x12\x1e\n\x16optimal_num_of_clients\x18\x06 \x01(\r\x12\x17\n\x0f\x61ggregation_alg\x18\x07 \x01(\r\x12\x16\n\x0esampling_ratio\x18\x08 \x01(\r\x12\x12\n\nclient_ids\x18\t \x03(\r\"t\n\x1b\x41ggregateResponseParameters\x12\x1a\n\x12updated_parameters\x18\x01 \x03(\x02\x12\x16\n\x0e\x65xecution_time\x18\x02 \x01(\x02\x12\x12\n\nclient_ids\x18\x03 \x03(\r\x12\r\n\x05round\x18\x04 \x01(\r\"\xd9\x01\n\x16StartRequestParameters\x12\r\n\x05\x66l_id\x18\x01 \x01(\r\x12\x12\n\nclient_ids\x18\x02 \x03(\r\x12\r\n\x05sigma\x18\x03 \x01(\x02\x12\x10\n\x08\x63lipping\x18\x04 \x01(\x02\x12\r\n\x05\x61lpha\x18\x05 \x01(\x02\x12\x16\n\x0esampling_ratio\x18\x06 \x01(\x02\x12\x17\n\x0f\x61ggregation_alg\x18\x07 \x01(\r\x12\x19\n\x11num_of_parameters\x18\x08 \x01(\r\x12 \n\x18num_of_sparse_parameters\x18\t \x01(\r\"K\n\x17StartResponseParameters\x12\r\n\x05\x66l_id\x18\x01 \x01(\r\x12\r\n\x05round\x18\x02 \x01(\r\x12\x12\n\nclient_ids\x18\x03 \x03(\r2\xdc\x01\n\nAggregator\x12l\n\tAggregate\x12..secure_aggregation.AggregateRequestParameters\x1a/.secure_aggregation.AggregateResponseParameters\x12`\n\x05Start\x12*.secure_aggregation.StartRequestParameters\x1a+.secure_aggregation.StartResponseParametersb\x06proto3'
+  serialized_pb=b'\n\x18secure_aggregation.proto\x12\x12secure_aggregation\"\xe2\x01\n\x1a\x41ggregateRequestParameters\x12\r\n\x05\x66l_id\x18\x01 \x01(\r\x12\r\n\x05round\x18\x02 \x01(\r\x12\x1c\n\x14\x65ncrypted_parameters\x18\x03 \x01(\x0c\x12\x19\n\x11num_of_parameters\x18\x04 \x01(\r\x12 \n\x18num_of_sparse_parameters\x18\x05 \x01(\r\x12\x1e\n\x16optimal_num_of_clients\x18\x06 \x01(\r\x12\x17\n\x0f\x61ggregation_alg\x18\x07 \x01(\r\x12\x12\n\nclient_ids\x18\x08 \x03(\r\"t\n\x1b\x41ggregateResponseParameters\x12\x1a\n\x12updated_parameters\x18\x01 \x03(\x02\x12\x16\n\x0e\x65xecution_time\x18\x02 \x01(\x02\x12\x12\n\nclient_ids\x18\x03 \x03(\r\x12\r\n\x05round\x18\x04 \x01(\r\"\xd9\x01\n\x16StartRequestParameters\x12\r\n\x05\x66l_id\x18\x01 \x01(\r\x12\x12\n\nclient_ids\x18\x02 \x03(\r\x12\r\n\x05sigma\x18\x03 \x01(\x02\x12\x10\n\x08\x63lipping\x18\x04 \x01(\x02\x12\r\n\x05\x61lpha\x18\x05 \x01(\x02\x12\x16\n\x0esampling_ratio\x18\x06 \x01(\x02\x12\x17\n\x0f\x61ggregation_alg\x18\x07 \x01(\r\x12\x19\n\x11num_of_parameters\x18\x08 \x01(\r\x12 \n\x18num_of_sparse_parameters\x18\t \x01(\r\"K\n\x17StartResponseParameters\x12\r\n\x05\x66l_id\x18\x01 \x01(\r\x12\r\n\x05round\x18\x02 \x01(\r\x12\x12\n\nclient_ids\x18\x03 \x03(\r2\xdc\x01\n\nAggregator\x12l\n\tAggregate\x12..secure_aggregation.AggregateRequestParameters\x1a/.secure_aggregation.AggregateResponseParameters\x12`\n\x05Start\x12*.secure_aggregation.StartRequestParameters\x1a+.secure_aggregation.StartResponseParametersb\x06proto3'
 )
 
 
@@ -83,15 +83,8 @@ _AGGREGATEREQUESTPARAMETERS = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='sampling_ratio', full_name='secure_aggregation.AggregateRequestParameters.sampling_ratio', index=7,
-      number=8, type=13, cpp_type=3, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-    _descriptor.FieldDescriptor(
-      name='client_ids', full_name='secure_aggregation.AggregateRequestParameters.client_ids', index=8,
-      number=9, type=13, cpp_type=3, label=3,
+      name='client_ids', full_name='secure_aggregation.AggregateRequestParameters.client_ids', index=7,
+      number=8, type=13, cpp_type=3, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -109,7 +102,7 @@ _AGGREGATEREQUESTPARAMETERS = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=49,
-  serialized_end=299,
+  serialized_end=275,
 )
 
 
@@ -161,8 +154,8 @@ _AGGREGATERESPONSEPARAMETERS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=301,
-  serialized_end=417,
+  serialized_start=277,
+  serialized_end=393,
 )
 
 
@@ -249,8 +242,8 @@ _STARTREQUESTPARAMETERS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=420,
-  serialized_end=637,
+  serialized_start=396,
+  serialized_end=613,
 )
 
 
@@ -295,8 +288,8 @@ _STARTRESPONSEPARAMETERS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=639,
-  serialized_end=714,
+  serialized_start=615,
+  serialized_end=690,
 )
 
 DESCRIPTOR.message_types_by_name['AggregateRequestParameters'] = _AGGREGATEREQUESTPARAMETERS
@@ -342,8 +335,8 @@ _AGGREGATOR = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=717,
-  serialized_end=937,
+  serialized_start=693,
+  serialized_end=913,
   methods=[
   _descriptor.MethodDescriptor(
     name='Aggregate',
