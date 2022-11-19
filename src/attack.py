@@ -746,3 +746,33 @@ def run_attack(
                     ],
                     add=True
         )
+    elif prefix in ['exp8']:
+        save_result(path_project, prefix,
+                    [
+                        args.dataset,
+                        args.epochs,
+                        args.frac,
+                        args.num_users,
+                        args.num_of_label_k,
+                        args.random_num_label,
+                        args.model,
+                        args.alpha,
+                        args.attack,
+                        args.fixed_inference_number,
+                        args.single_model,
+                        args.attacker_batch_size,
+                        args.seed,
+                        args.protection,
+                        args.index_privacy_r,
+                        args.dp,
+                        args.epsilon,
+                        args.delta,
+                        args.sigma,
+                        acc_comp / (num - missing_labels),
+                        acc_part / num,
+                        missing_labels,
+                        num
+                    ],
+                    add=True
+        )
+
