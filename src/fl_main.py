@@ -334,7 +334,7 @@ if __name__ == '__main__':
         print("|---- Test Accuracy: {:.2f}%".format(100 * test_acc))
 
     # Attack inference
-    if not is_secure_agg and not args.dp:
+    if not is_secure_agg:
         run_attack(path_project, args.prefix, attacker, target_client_ids, target_client_labels, args)
         print('\n Total Run Time: {0:0.4f}'.format(time.time() - start_time))
         attacker.save_pickle(path_project, args)
