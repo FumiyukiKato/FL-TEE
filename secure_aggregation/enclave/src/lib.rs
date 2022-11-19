@@ -125,18 +125,24 @@ pub extern "C" fn ecall_fl_init(
     verbose: u8,
     dp: u8,
 ) -> sgx_status_t {
-    let fl_config_map = FLConfigMap::new();
-    let fl_config_map_box = Box::new(RefCell::<FLConfigMap>::new(fl_config_map));
-    let fl_config_map_ptr = Box::into_raw(fl_config_map_box);
-    FL_CONFIG_MAP.store(fl_config_map_ptr as *mut (), Ordering::SeqCst);
+    let mut fl_config_map = match get_ref_fl_config_map() {
+        None => {
+            let fl_config_map = FLConfigMap::new();
+            let fl_config_map_box = Box::new(RefCell::<FLConfigMap>::new(fl_config_map));
+            let fl_config_map_ptr = Box::into_raw(fl_config_map_box);
+            FL_CONFIG_MAP.store(fl_config_map_ptr as *mut (), Ordering::SeqCst);
+            get_ref_fl_config_map().unwrap().borrow_mut()
+        },
+        Some(fl_config_map_ptr) => {
+            fl_config_map_ptr.borrow_mut()
+        }
+    };
 
     let client_ids_vec: Vec<u32> =
         unsafe { slice::from_raw_parts(client_ids, client_size) }.to_vec();
     if client_ids_vec.len() != client_size {
         return sgx_status_t::SGX_ERROR_INVALID_PARAMETER;
     }
-
-    let mut fl_config_map = get_ref_fl_config_map().unwrap().borrow_mut();
 
     let fl_config = FLConfig {
         client_ids: client_ids_vec.clone(),
@@ -584,9 +590,14 @@ pub extern "C" fn ecall_client_size_optimized_secure_aggregation(
 
 fn mock_remote_attestation(client_ids_vec: Vec<u32>) -> sgx_status_t {
     println!("[SGX] remote attestation mock");
-    let session_key_store = SessionKeyStore::build_mock(client_ids_vec);
-    let session_key_store_box = Box::new(RefCell::<SessionKeyStore>::new(session_key_store));
-    let session_key_store_ptr = Box::into_raw(session_key_store_box);
-    SESSION_KEYS.store(session_key_store_ptr as *mut (), Ordering::SeqCst);
+    match get_ref_session_keys() {
+        None => {
+            let session_key_store = SessionKeyStore::build_mock(client_ids_vec);
+            let session_key_store_box = Box::new(RefCell::<SessionKeyStore>::new(session_key_store));
+            let session_key_store_ptr = Box::into_raw(session_key_store_box);
+            SESSION_KEYS.store(session_key_store_ptr as *mut (), Ordering::SeqCst);
+        },
+        Some(_) => {}
+    };
     sgx_status_t::SGX_SUCCESS
 }

@@ -90,7 +90,8 @@ pub fn print_fl_settings(
     num_of_parameters: usize,
     num_of_sparse_parameters: usize,
 ) {
-    println!("--------------------- FL Params ---------------------");
+    println!("");
+    println!("+++++++++++++++++++++++ FL Params +++++++++++++++++++++++");
     println!("    Aggregation algorithm = {}", aggregation_alg);
     println!(
         "    DP params (sigma, clipping, alpha) = ({}, {}, {})",
@@ -102,7 +103,7 @@ pub fn print_fl_settings(
         "    Number of Parameter = {}, sparse parameter = {}",
         num_of_parameters, num_of_sparse_parameters
     );
-    println!("-----------------------------------------------------");
+    println!("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
 }
 
 pub fn print_fl_settings_for_each_round(

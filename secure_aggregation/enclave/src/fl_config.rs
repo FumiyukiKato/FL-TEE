@@ -11,11 +11,18 @@ pub struct FLConfigMap {
 
 impl FLConfigMap {
     pub fn new() -> Self {
+        println!("[SGX] Build FLConfigMap Store");
         FLConfigMap::default()
     }
 
     pub fn add(& mut self, fl_id: u32, config: FLConfig) {
         self.configs.insert(fl_id, config);
+    }
+}
+
+impl Drop for FLConfigMap {
+    fn drop(&mut self) {
+        println!("[SGX] (never called!!) FLConfigMap Dropped");
     }
 }
 
@@ -43,5 +50,11 @@ impl FLConfig {
 
     pub fn increment_round(&mut self) {
         self.current_round += 1
+    }
+}
+
+impl Drop for FLConfig {
+    fn drop(&mut self) {
+        println!("[SGX] FLConfig Dropped (correctly Overwritten without memory leak)");
     }
 }
