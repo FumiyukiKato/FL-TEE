@@ -23,6 +23,5 @@ pub extern "C" fn ocall_load_next_data(
         );
         encrypted_parameters_to_upload_to_enclave.copy_from_slice(encrypted_parameters);
     }
-    println!("ocall, finish");
     sgx_status_t::SGX_SUCCESS
 }

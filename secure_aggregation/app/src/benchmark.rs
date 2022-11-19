@@ -299,14 +299,14 @@ fn main() {
         "Total [s]"
     ]);
 
-    println!(" init_enclave...");
+    println!("[Server] init_enclave...");
     let enclave = match init_enclave() {
         Ok(r) => {
-            println!(" Init Enclave Successful {}!", r.geteid());
+            println!("[Server] Init Enclave Successful {}!", r.geteid());
             r
         }
         Err(x) => {
-            panic!(" Init Enclave Failed {}!", x.as_str());
+            panic!("[Server] Init Enclave Failed {}!", x.as_str());
         }
     };
     let eid = enclave.geteid();

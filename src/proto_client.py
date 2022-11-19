@@ -18,6 +18,7 @@ def call_grpc_aggregate(
     aggregation_alg,
     optimal_num_of_clients,
 ):
+    print(f"request 'aggregate' to {ADDRESS}")
     with grpc.insecure_channel(ADDRESS) as channel:
         stub = secure_aggregation_pb2_grpc.AggregatorStub(channel)
         response = stub.Aggregate(
@@ -45,6 +46,7 @@ def call_grpc_start(
     num_of_parameters: int,
     num_of_sparse_parameters: int,
 ):
+    print(f"request 'start' to {ADDRESS}")
     with grpc.insecure_channel(ADDRESS) as channel:
         stub = secure_aggregation_pb2_grpc.AggregatorStub(channel)
         response = stub.Start(

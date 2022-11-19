@@ -90,7 +90,6 @@ pub fn print_fl_settings(
     num_of_parameters: usize,
     num_of_sparse_parameters: usize,
 ) {
-    println!("");
     println!("+++++++++++++++++++++++ FL Params +++++++++++++++++++++++");
     println!("    Aggregation algorithm = {}", aggregation_alg);
     println!(

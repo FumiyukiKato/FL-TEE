@@ -377,3 +377,23 @@ if __name__ == '__main__':
                         ],
                         add=True
             )
+        if args.prefix in ['exp9']:
+                save_result(path_project, args.prefix,
+                        [
+                            args.dataset,
+                            args.epochs,
+                            args.frac,
+                            args.num_users,
+                            args.num_of_label_k,
+                            args.random_num_label,
+                            args.model,
+                            args.alpha,
+                            args.seed,
+                            args.aggregation_alg,
+                            args.optimal_num_of_clients,
+                            args.protection,
+                            args.index_privacy_r,
+                            execution_time
+                        ],
+                        add=True
+            )

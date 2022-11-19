@@ -4,6 +4,8 @@
 - grpc server at `0.0.0.0:50051`
 
 
+When using the optimized algorithm, pay attention to the stack size of the host machine. `ulimit -s 100000`
+
 ### One shot aggregation test
 1. `make`
 2. `bin/bench -v -a non_oblivious -c 100 -d 100000 -k 1000 -t 1`   

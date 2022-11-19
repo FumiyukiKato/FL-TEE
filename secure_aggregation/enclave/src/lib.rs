@@ -159,10 +159,22 @@ pub extern "C" fn ecall_fl_init(
         current_round: 0,
         current_sampled_clients: HashSet::new(),
     };
+
+    match get_ref_session_keys() {
+        None => { mock_remote_attestation(client_ids_vec); },
+        Some(ptr) => {
+            let mut session_keys = ptr.borrow_mut();
+            for client_id in client_ids_vec.iter() {
+                match session_keys.map.get(client_id) {
+                    None => session_keys.add(*client_id),
+                    _defalt => {},
+                }
+            }
+        }
+    }
+
     fl_config_map.add(fl_id, fl_config);
     println!("[SGX] make fl config id {}", fl_id);
-
-    mock_remote_attestation(client_ids_vec);
 
     sgx_status_t::SGX_SUCCESS
 }
@@ -590,14 +602,9 @@ pub extern "C" fn ecall_client_size_optimized_secure_aggregation(
 
 fn mock_remote_attestation(client_ids_vec: Vec<u32>) -> sgx_status_t {
     println!("[SGX] remote attestation mock");
-    match get_ref_session_keys() {
-        None => {
-            let session_key_store = SessionKeyStore::build_mock(client_ids_vec);
-            let session_key_store_box = Box::new(RefCell::<SessionKeyStore>::new(session_key_store));
-            let session_key_store_ptr = Box::into_raw(session_key_store_box);
-            SESSION_KEYS.store(session_key_store_ptr as *mut (), Ordering::SeqCst);
-        },
-        Some(_) => {}
-    };
+    let session_key_store = SessionKeyStore::build_mock(client_ids_vec);
+    let session_key_store_box = Box::new(RefCell::<SessionKeyStore>::new(session_key_store));
+    let session_key_store_ptr = Box::into_raw(session_key_store_box);
+    SESSION_KEYS.store(session_key_store_ptr as *mut (), Ordering::SeqCst);
     sgx_status_t::SGX_SUCCESS
 }

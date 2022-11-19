@@ -6,7 +6,7 @@ type SessionKey = [u8; 16];
 
 #[derive(Clone, Default, Debug)]
 pub struct SessionKeyStore {
-    pub map: HashMap<u32, SessionKey>
+    pub map: HashMap<u32, SessionKey>,
 }
 
 impl SessionKeyStore {
@@ -23,6 +23,12 @@ impl SessionKeyStore {
             map.insert(*client_id, shared_key);
         }
         Self { map }
+    }
+
+    pub fn add(&mut self, client_id: u32) {
+        let mut shared_key: [u8; 16] = [0; 16];
+        shared_key[4..8].copy_from_slice(&client_id.to_be_bytes());
+        self.map.insert(client_id, shared_key);
     }
 }
 

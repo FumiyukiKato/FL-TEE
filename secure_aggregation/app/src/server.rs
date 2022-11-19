@@ -6,6 +6,9 @@ use secure_aggregation::aggregator_server::{Aggregator, AggregatorServer};
 use secure_aggregation::{AggregateRequestParameters, AggregateResponseParameters, StartRequestParameters, StartResponseParameters};
 use sgx_types::*;
 use std::time::Instant;
+
+use tokio::runtime;
+
 use tonic::{transport::Server, Request, Response, Status};
 
 pub mod secure_aggregation {
@@ -42,7 +45,7 @@ impl Aggregator for CentralServer {
         &self,
         request: Request<StartRequestParameters>,
     ) -> Result<Response<StartResponseParameters>, Status> {
-        println!("Got a start request ...");
+        println!("[Server] Got a start request ...");
         let fl_id = request.get_ref().fl_id as u32;
         let client_ids = &request.get_ref().client_ids;
         let sigma = request.get_ref().sigma as f32;
@@ -100,6 +103,7 @@ impl Aggregator for CentralServer {
             client_ids: sampled_client_ids,
         };
 
+        println!("[Server] complete preparation");
         Ok(Response::new(reply))
     }
 
@@ -108,7 +112,7 @@ impl Aggregator for CentralServer {
         &self,
         request: Request<AggregateRequestParameters>,
     ) -> Result<Response<AggregateResponseParameters>, Status> {
-        println!("Got a aggregate request ...");
+        println!("[Server] Got a aggregate request ...");
 
         // request
         let fl_id = request.get_ref().fl_id as u32;
@@ -193,7 +197,7 @@ impl Aggregator for CentralServer {
             )
         };
         if result != sgx_status_t::SGX_SUCCESS || retval != sgx_status_t::SGX_SUCCESS {
-            panic!("Error at ecall_start_round")
+            panic!("[Server] Error at ecall_start_round")
         }
 
         let reply = AggregateResponseParameters {
@@ -203,23 +207,24 @@ impl Aggregator for CentralServer {
             round: next_round
         };
 
+        println!("[Server] complete the round");
         Ok(Response::new(reply))
     }
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+// #[tokio::main]
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let addr = "0.0.0.0:50051".parse().unwrap();
     let mut central_server = CentralServer::default();
 
-    println!("  init_enclave...");
+    println!("[Server] init_enclave...");
     let enclave = match init_enclave() {
         Ok(r) => {
-            println!("      Init Enclave Successful {}!", r.geteid());
+            println!("[Server] Init Enclave Successful {}!", r.geteid());
             r
         }
         Err(x) => {
-            println!(" Init Enclave Failed {}!", x.as_str());
+            println!("[Server] Init Enclave Failed {}!", x.as_str());
             panic!("")
         }
     };
@@ -228,11 +233,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     central_server.verbose = true;
     central_server.dp = false;
 
-    println!("  Now GRPC Server is binded on {:?}", addr);
-    Server::builder()
+    println!("[Server] Now GRPC Server is binded on {:?}", addr);
+
+    let rt = runtime::Builder::new_multi_thread()
+        .enable_all()
+        .thread_stack_size(100000000) // For OCALL
+        .build()
+        .expect("failed to build runtime");
+
+    // Server::builder()
+    //     .add_service(AggregatorServer::new(central_server))
+    //     .serve(addr)
+    //     .await?;
+
+    let server_future = Server::builder()
         .add_service(AggregatorServer::new(central_server))
-        .serve(addr)
-        .await?;
+        .serve(addr);
+    rt.block_on(server_future).expect("failed to successfully run the future on RunTime");
 
     enclave.destroy();
     Ok(())
