@@ -15,9 +15,25 @@ $ git clone --recursive https://github.com/FumiyukiKato/FL-TEE.git
 ```
 
 ## Setup FL
-1. run pip install `$ pip install -r requirements.txt`
-2. compile protocol buffer file `$ cd src && python compile_proto.py`
-3. If you need to compile client encryption library, run command `$ gcc -shared -fPIC -o src/libsgx_enc.so src/cpp/encryption.cpp -lssl -lcrypto && python src/ffi_test.py`) (require host machine to set up linux-sgx and `export LD_LIBRARY_PATH=/opt/sgxsdk/sdk_libs)`)
+1. run pip install 
+```bash
+$ pip install -r requirements.txt
+```
+
+2. compile protocol buffer file 
+```bash
+$ cd src 
+$ python compile_proto.py
+```
+
+3. If you need to compile client encryption library, run command 
+```baash
+$ cd src 
+$ gcc -shared -fPIC -o src/libsgx_enc.so src/cpp/encryption.cpp -lssl -lcrypto 
+$ python src/ffi_test.py
+```
+require host machine to set up linux-sgx and `export LD_LIBRARY_PATH=/opt/sgxsdk/sdk_libs`
+
 4. If you need Purchase100 Dataset, donwload `purchase100.zip` (at https://drive.google.com/drive/folders/1nDDr8OWRaliIrUZcZ-0I8sEB2WqAXdKZ) to dataset/purchase100/ and unzip (using preprocessed data provided by https://github.com/bargavj/EvaluatingDPML [1][2])
 
 
@@ -32,11 +48,34 @@ $ sudo sh -c "cat /etc/modules | grep -Fxq isgx || echo isgx >> /etc/modules"
 $ sudo /sbin/depmod
 $ sudo /sbin/modprobe isgx
 ```
-2. install Rust sgx sdk of version 1.1.3 `$ git clone https://github.com/apache/incubator-teaclave-sgx-sdk.git secure_aggregation/incubator-teaclave-sgx-sdk -b v1.1.3`
-3. run command `$ docker run -v /path/to/FL-TEE/secure_aggregation/incubator-teaclave-sgx-sdk:/root/sgx -v /path/to/FL-TEE:/root/FL-TEE -ti -p 50051:50051 -d --device /dev/isgx baiduxlab/sgx-rust:1804-1.1.3` (Using Docker image of [ubuntu 18.04 and sgx-rust v1.1.3](https://hub.docker.com/layers/baiduxlab/sgx-rust/1804-1.1.3/images/sha256-fbf4b495a0433ee2ef45ae9780b05d2f181aa6bbbe16dd0cf9ab5b4059ff15a5?context=explore) )
-4. Login to the container and run command `$ LD_LIBRARY_PATH=/opt/intel/sgx-aesm-service/aesm /opt/intel/sgx-aesm-service/aesm/aesm_service` (Wake up AESM service)
-5. inside the container, run command  `$ cd secure_aggregation` and `$ make` (Build the enclave application)
-6. To wake up server, run command `$ bin/secure-aggregation-server` (Aggregation server is hosted at `0.0.0.0:50051`)
+
+2. install Rust sgx sdk of version 1.1.3 
+```bash
+$ cd FL-TEE
+$ git clone https://github.com/apache/incubator-teaclave-sgx-sdk.git secure_aggregation/incubator-teaclave-sgx-sdk -b v1.1.3
+```
+
+3. run command (Using Docker image of [ubuntu 18.04 and sgx-rust v1.1.3](https://hub.docker.com/layers/baiduxlab/sgx-rust/1804-1.1.3/images/sha256-fbf4b495a0433ee2ef45ae9780b05d2f181aa6bbbe16dd0cf9ab5b4059ff15a5?context=explore) )
+```bash
+$ docker run -v /path/to/FL-TEE/secure_aggregation/incubator-teaclave-sgx-sdk:/root/sgx -v /path/to/FL-TEE:/root/FL-TEE -ti -p 50051:50051 -d --device /dev/isgx baiduxlab/sgx-rust:1804-1.1.3 
+```
+
+4. Login to the container and run command (Wake up AESM service)
+```bash
+
+(docker)$ LD_LIBRARY_PATH=/opt/intel/sgx-aesm-service/aesm /opt/intel/sgx-aesm-service/aesm/aesm_service
+```
+
+5. inside the container, run command  (Build the enclave application)
+```bash
+$ cd secure_aggregation
+$ make
+```
+
+6. To wake up server, run command (Aggregation server is hosted at `0.0.0.0:50051`)
+```bash
+$ bin/secure-aggregation-server
+```
 
 
 Note that: Our experiment assumes the enclave and client has already performed a Remote Attestation handshake and established a shared secret key. In our source code, we use fixed keys for each client based on client ID and fixed IV. We think this is sufficient to observe the overhead caused by encryption for research purposes.
