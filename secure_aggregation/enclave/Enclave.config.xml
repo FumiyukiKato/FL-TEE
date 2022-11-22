@@ -1,8 +1,8 @@
 <!-- Please refer to User's Guide for the explanation of each field -->
 <EnclaveConfiguration>
   <ProdID>0</ProdID>
-  <StackMaxSize>0x10000000</StackMaxSize>
-  <HeapMaxSize>0x100000000</HeapMaxSize>
+  <StackMaxSize>0x40000000</StackMaxSize>  <!-- 0x10000000 = 160MB -->
+  <HeapMaxSize>0x100000000</HeapMaxSize>   <!-- 0x100000000 = 4GB -->
   <TCSNum>1</TCSNum>
   <TCSPolicy>1</TCSPolicy>
   <DisableDebug>0</DisableDebug>

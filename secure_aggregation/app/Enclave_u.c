@@ -63,10 +63,10 @@ typedef struct ms_t_global_init_ecall_t {
 
 typedef struct ms_ocall_load_next_data_t {
 	sgx_status_t ms_retval;
-	size_t ms_current_cursor;
 	uint8_t* ms_encrypted_parameters_data_ptr;
 	uint8_t* ms_encrypted_parameters_data;
 	size_t ms_encrypted_parameters_size;
+	size_t ms_offset;
 } ms_ocall_load_next_data_t;
 
 typedef struct ms_u_thread_set_event_ocall_t {
@@ -498,7 +498,7 @@ typedef struct ms_sgx_thread_set_multiple_untrusted_events_ocall_t {
 static sgx_status_t SGX_CDECL Enclave_ocall_load_next_data(void* pms)
 {
 	ms_ocall_load_next_data_t* ms = SGX_CAST(ms_ocall_load_next_data_t*, pms);
-	ms->ms_retval = ocall_load_next_data(ms->ms_current_cursor, ms->ms_encrypted_parameters_data_ptr, ms->ms_encrypted_parameters_data, ms->ms_encrypted_parameters_size);
+	ms->ms_retval = ocall_load_next_data(ms->ms_encrypted_parameters_data_ptr, ms->ms_encrypted_parameters_data, ms->ms_encrypted_parameters_size, ms->ms_offset);
 
 	return SGX_SUCCESS;
 }

@@ -89,10 +89,10 @@ typedef struct ms_t_global_init_ecall_t {
 
 typedef struct ms_ocall_load_next_data_t {
 	sgx_status_t ms_retval;
-	size_t ms_current_cursor;
 	uint8_t* ms_encrypted_parameters_data_ptr;
 	uint8_t* ms_encrypted_parameters_data;
 	size_t ms_encrypted_parameters_size;
+	size_t ms_offset;
 } ms_ocall_load_next_data_t;
 
 typedef struct ms_u_thread_set_event_ocall_t {
@@ -1019,7 +1019,7 @@ SGX_EXTERNC const struct {
 };
 
 
-sgx_status_t SGX_CDECL ocall_load_next_data(sgx_status_t* retval, size_t current_cursor, uint8_t* encrypted_parameters_data_ptr, uint8_t* encrypted_parameters_data, size_t encrypted_parameters_size)
+sgx_status_t SGX_CDECL ocall_load_next_data(sgx_status_t* retval, uint8_t* encrypted_parameters_data_ptr, uint8_t* encrypted_parameters_data, size_t encrypted_parameters_size, size_t offset)
 {
 	sgx_status_t status = SGX_SUCCESS;
 	size_t _len_encrypted_parameters_data = encrypted_parameters_size * sizeof(uint8_t);
@@ -1044,7 +1044,6 @@ sgx_status_t SGX_CDECL ocall_load_next_data(sgx_status_t* retval, size_t current
 	__tmp = (void *)((size_t)__tmp + sizeof(ms_ocall_load_next_data_t));
 	ocalloc_size -= sizeof(ms_ocall_load_next_data_t);
 
-	ms->ms_current_cursor = current_cursor;
 	ms->ms_encrypted_parameters_data_ptr = encrypted_parameters_data_ptr;
 	if (encrypted_parameters_data != NULL) {
 		ms->ms_encrypted_parameters_data = (uint8_t*)__tmp;
@@ -1061,6 +1060,7 @@ sgx_status_t SGX_CDECL ocall_load_next_data(sgx_status_t* retval, size_t current
 	}
 	
 	ms->ms_encrypted_parameters_size = encrypted_parameters_size;
+	ms->ms_offset = offset;
 	status = sgx_ocall(0, ms);
 
 	if (status == SGX_SUCCESS) {

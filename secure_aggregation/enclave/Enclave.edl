@@ -76,10 +76,10 @@ enclave {
     
     untrusted {
         sgx_status_t ocall_load_next_data(
-            size_t current_cursor,
             [user_check] uint8_t* encrypted_parameters_data_ptr,
             [out, count=encrypted_parameters_size] uint8_t* encrypted_parameters_data,
-            size_t encrypted_parameters_size
+            size_t encrypted_parameters_size,
+            size_t offset
         );
     };
 };

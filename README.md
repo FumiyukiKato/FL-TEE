@@ -23,6 +23,15 @@ $ git clone --recursive https://github.com/FumiyukiKato/FL-TEE.git
 
 ## Setup Server
 1. setup [linux-sgx-driver](https://github.com/intel/linux-sgx-driver) and confirm `/dev/isgx` on host machine
+```bash
+$ cd linux-sgx-driver/
+$ sudo make
+$ sudo mkdir -p "/lib/modules/"`uname -r`"/kernel/drivers/intel/sgx"    
+$ sudo cp isgx.ko "/lib/modules/"`uname -r`"/kernel/drivers/intel/sgx"    
+$ sudo sh -c "cat /etc/modules | grep -Fxq isgx || echo isgx >> /etc/modules"    
+$ sudo /sbin/depmod
+$ sudo /sbin/modprobe isgx
+```
 2. install Rust sgx sdk of version 1.1.3 `$ git clone https://github.com/apache/incubator-teaclave-sgx-sdk.git secure_aggregation/incubator-teaclave-sgx-sdk -b v1.1.3`
 3. run command `$ docker run -v /path/to/FL-TEE/secure_aggregation/incubator-teaclave-sgx-sdk:/root/sgx -v /path/to/FL-TEE:/root/FL-TEE -ti -p 50051:50051 -d --device /dev/isgx baiduxlab/sgx-rust:1804-1.1.3` (Using Docker image of [ubuntu 18.04 and sgx-rust v1.1.3](https://hub.docker.com/layers/baiduxlab/sgx-rust/1804-1.1.3/images/sha256-fbf4b495a0433ee2ef45ae9780b05d2f181aa6bbbe16dd0cf9ab5b4059ff15a5?context=explore) )
 4. Login to the container and run command `$ LD_LIBRARY_PATH=/opt/intel/sgx-aesm-service/aesm /opt/intel/sgx-aesm-service/aesm/aesm_service` (Wake up AESM service)

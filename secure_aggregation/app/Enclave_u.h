@@ -23,7 +23,7 @@ extern "C" {
 
 #ifndef OCALL_LOAD_NEXT_DATA_DEFINED__
 #define OCALL_LOAD_NEXT_DATA_DEFINED__
-sgx_status_t SGX_UBRIDGE(SGX_NOCONVENTION, ocall_load_next_data, (size_t current_cursor, uint8_t* encrypted_parameters_data_ptr, uint8_t* encrypted_parameters_data, size_t encrypted_parameters_size));
+sgx_status_t SGX_UBRIDGE(SGX_NOCONVENTION, ocall_load_next_data, (uint8_t* encrypted_parameters_data_ptr, uint8_t* encrypted_parameters_data, size_t encrypted_parameters_size, size_t offset));
 #endif
 #ifndef U_THREAD_SET_EVENT_OCALL_DEFINED__
 #define U_THREAD_SET_EVENT_OCALL_DEFINED__

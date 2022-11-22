@@ -27,7 +27,7 @@ sgx_status_t ecall_start_round(uint32_t fl_id, uint32_t round, uint32_t sample_s
 void t_global_init_ecall(uint64_t id, const uint8_t* path, size_t len);
 void t_global_exit_ecall(void);
 
-sgx_status_t SGX_CDECL ocall_load_next_data(sgx_status_t* retval, size_t current_cursor, uint8_t* encrypted_parameters_data_ptr, uint8_t* encrypted_parameters_data, size_t encrypted_parameters_size);
+sgx_status_t SGX_CDECL ocall_load_next_data(sgx_status_t* retval, uint8_t* encrypted_parameters_data_ptr, uint8_t* encrypted_parameters_data, size_t encrypted_parameters_size, size_t offset);
 sgx_status_t SGX_CDECL u_thread_set_event_ocall(int* retval, int* error, const void* tcs);
 sgx_status_t SGX_CDECL u_thread_wait_event_ocall(int* retval, int* error, const void* tcs, const struct timespec* timeout);
 sgx_status_t SGX_CDECL u_thread_set_multiple_events_ocall(int* retval, int* error, const void** tcss, int total);

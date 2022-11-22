@@ -56,16 +56,16 @@ mod nips19;
 use nips19::nips19;
 
 mod advanced;
-use advanced::advanced;
-
-mod client_size_optimized;
-use client_size_optimized::client_size_optimized;
+use advanced::{advanced, client_size_optimized};
 
 mod baseline;
 use baseline::baseline;
 
 mod non_oblivious;
 use non_oblivious::non_oblivious;
+
+mod bubble_sort_based;
+use bubble_sort_based::bubble_sort_based;
 
 mod oram;
 use oram::path_oram_with_zerotrace;
@@ -103,10 +103,10 @@ pub fn get_ref_session_keys() -> Option<&'static RefCell<SessionKeyStore>> {
 extern "C" {
     pub fn ocall_load_next_data(
         ret_val: *mut sgx_status_t,
-        current_cursor: usize,
         encrypted_parameters_data_ptr: *const u8,
         encrypted_parameters_data: *mut u8,
         encrypted_parameters_size: usize,
+        offset: usize,
     ) -> sgx_status_t;
 }
 
@@ -386,6 +386,13 @@ pub extern "C" fn ecall_secure_aggregation(
             client_size,
             verbose,
         ),
+        7 => bubble_sort_based(
+            num_of_sparse_parameters,
+            aggregated_parameters,
+            &mut all_uploaded_parameters.weights,
+            client_size,
+            verbose,
+        ),
         _ => panic!("aggregation algorithm is nothing"),
     }
 
@@ -490,20 +497,16 @@ pub extern "C" fn ecall_client_size_optimized_secure_aggregation(
 
     let mut current_cursor = 0;
     let cursor_last = client_size / optimal_num_of_clients;
-    let mut rt: sgx_status_t = sgx_status_t::SGX_ERROR_UNEXPECTED;
     let byte_size_per_client = num_of_sparse_parameters * WEIGHT_BYTE_SIZE;
     let mut decrypted_parameters_vec: Vec<u8> = vec![0; byte_size_per_client];
 
     let session_key_store = get_ref_session_keys().unwrap().borrow();
 
+    let start = Instant::now();
     while current_cursor <= cursor_last {
-        if current_cursor * optimal_num_of_clients >= client_size {
+        if current_cursor*optimal_num_of_clients >= client_size {
             break;
         }
-        let mut loaded_parameters: Parameters =
-            Parameters::new(num_of_sparse_parameters * optimal_num_of_clients);
-        let loaded_encrypted_parameters_vec: Vec<u8> =
-            vec![0; byte_size_per_client * optimal_num_of_clients];
         let to_idx = if (current_cursor + 1) * optimal_num_of_clients < client_size {
             (current_cursor + 1) * optimal_num_of_clients
         } else {
@@ -512,21 +515,19 @@ pub extern "C" fn ecall_client_size_optimized_secure_aggregation(
         let client_ids_of_this_round =
             &client_ids_vec[current_cursor * optimal_num_of_clients..to_idx];
 
-        // load optimal sized data
-        let res = unsafe {
-            ocall_load_next_data(
-                &mut rt as *mut sgx_status_t,
-                current_cursor,
-                encrypted_parameters_data_ptr,
-                loaded_encrypted_parameters_vec.as_ptr() as *mut u8,
-                loaded_encrypted_parameters_vec.len(),
-            )
-        };
-        if res != sgx_status_t::SGX_SUCCESS {
-            return res;
-        }
-        if rt != sgx_status_t::SGX_SUCCESS {
-            return rt;
+        let mut loaded_parameters: Parameters =
+            Parameters::new(num_of_sparse_parameters * client_ids_of_this_round.len());
+        let mut loaded_encrypted_parameters_vec: Vec<u8> =
+            vec![0; byte_size_per_client * client_ids_of_this_round.len()];
+
+        let offset = current_cursor * optimal_num_of_clients * byte_size_per_client;
+
+        unsafe {
+            let encrypted_parameters = slice::from_raw_parts(
+                encrypted_parameters_data_ptr.offset(offset as isize),
+                loaded_encrypted_parameters_vec.len()
+            );
+            loaded_encrypted_parameters_vec.copy_from_slice(encrypted_parameters);
         }
 
         for (i, client_id) in client_ids_of_this_round.iter().enumerate() {
@@ -575,7 +576,7 @@ pub extern "C" fn ecall_client_size_optimized_secure_aggregation(
     if verbose {
         println!(
             "[SGX CLOCK] {}:  {}.{:06} seconds",
-            "Decryption",
+            "Aggregation",
             end.as_secs(),
             end.subsec_nanos() / 1_000
         );
@@ -586,16 +587,6 @@ pub extern "C" fn ecall_client_size_optimized_secure_aggregation(
         rdp_gaussian_mechanism(aggregated_parameters, fl_config.sigma, fl_config.clipping, fl_config.alpha, client_size);
     }
 
-    let end = start.elapsed();
-    unsafe { *execution_time_results.offset(2) = end.as_secs_f32() };
-    if verbose {
-        println!(
-            "[SGX CLOCK] {}:  {}.{:06} seconds",
-            "Aggregation",
-            end.as_secs(),
-            end.subsec_nanos() / 1_000
-        );
-    }
     fl_config.increment_round();
     sgx_status_t::SGX_SUCCESS
 }

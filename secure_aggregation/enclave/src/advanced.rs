@@ -7,8 +7,36 @@ use crate::parameters::Weight;
 use crate::common::{average_params};
 use crate::oblivious_primitives::{o_swap, o_mov};
 
+pub fn client_size_optimized(
+    num_of_sparse_parameters: usize,
+    global_params: &mut [f32],
+    uploaded_params: &mut Vec<Weight>,
+    client_size: usize,
+    verbose: bool,
+) {
+    _advanced(num_of_sparse_parameters, global_params, uploaded_params, client_size, false);
+    for i in 0..global_params.len() {
+        global_params[i] += uploaded_params[i].1;
+    }
+}
 
 pub fn advanced(
+    num_of_sparse_parameters: usize,
+    global_params: &mut [f32],
+    uploaded_params: &mut Vec<Weight>,
+    client_size: usize,
+    verbose: bool,
+) {
+    _advanced(num_of_sparse_parameters, global_params, uploaded_params, client_size, false);
+
+    for i in 0..global_params.len() {
+        global_params[i] = uploaded_params[i].1;
+    }
+    
+    average_params(global_params, client_size);
+}
+
+fn _advanced(
     num_of_sparse_parameters: usize,
     global_params: &mut [f32],
     uploaded_params: &mut Vec<Weight>,
@@ -82,11 +110,6 @@ pub fn advanced(
     let end = start.elapsed();
     if verbose { println!("second oblivious_sort_idx done:  {}.{:06} seconds", end.as_secs(), end.subsec_nanos() / 1_000); }
     
-    for i in 0..d {
-        global_params[i] = uploaded_params[i].1;
-    }
-    
-    average_params(global_params, n);
 }
 
 

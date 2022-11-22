@@ -123,6 +123,9 @@ impl Aggregator for CentralServer {
         let num_of_sparse_parameters = request.get_ref().num_of_sparse_parameters as usize;
         let client_ids = &request.get_ref().client_ids;
         let optimal_num_of_clients = request.get_ref().optimal_num_of_clients as usize;
+        if optimal_num_of_clients > client_ids.len() {
+            panic!("optimal_num_of_clients is more than client size {}", client_ids.len());
+        }
 
         if self.verbose { print_fl_settings_for_each_round(
             fl_id, round, get_algorithm_name(aggregation_alg)) };
@@ -237,7 +240,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let rt = runtime::Builder::new_multi_thread()
         .enable_all()
-        .thread_stack_size(100000000) // For OCALL
+        .thread_stack_size(1000000000) // For OCALL
         .build()
         .expect("failed to build runtime");
 

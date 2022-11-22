@@ -31,6 +31,9 @@ mod ocalls;
 #[allow(unused_imports)]
 use ocalls::ocall_load_next_data;
 
+
+const WEIGHT_BYTE_SIZE: usize =8;
+
 fn create_opts() -> App<'static, 'static> {
     App::new("Benchmark")
         .version("0.1")
@@ -87,7 +90,7 @@ fn create_opts() -> App<'static, 'static> {
         .arg(Arg::with_name("optimal_num_of_clients")
             .help("For optimized memory method")
             .long("optimal_num_of_clients")
-            .default_value("1000"))
+            .default_value("0"))
 }
 
 fn one_shot_secure_aggregation(
@@ -144,6 +147,9 @@ fn one_shot_secure_aggregation(
     }
 
     let sample_size = (sampling_ratio * client_ids.len() as f32) as usize;
+    if optimal_num_of_clients > sample_size {
+        panic!("optimal_num_of_clients is more than client size {}", sample_size);
+    }
     let sampled_client_ids: Vec<u32> = vec![0u32; sample_size];
     result = unsafe {
         ecall_start_round(
@@ -160,9 +166,11 @@ fn one_shot_secure_aggregation(
     }
     // println!("sampled ids {:?}", sampled_client_ids);
 
-    let uploaded_encrypted_data: Vec<u8> = sampled_client_ids.iter()
-        .map(|x| parameters_of_client_ids[x].clone())
-        .fold(vec![], |concated: Vec<u8>, new| [&concated[..], &new[..]].concat());
+    let mut uploaded_encrypted_data: Vec<u8> = vec![0; sample_size*num_of_sparse_parameters*WEIGHT_BYTE_SIZE];
+    for i in 0..sample_size {
+        uploaded_encrypted_data[i*num_of_sparse_parameters*WEIGHT_BYTE_SIZE..(i+1)*num_of_sparse_parameters*WEIGHT_BYTE_SIZE]
+            .copy_from_slice(&parameters_of_client_ids[&sampled_client_ids[i]])
+    }
 
     let start = Instant::now();
     if aggregation_alg == 6 {
@@ -243,6 +251,7 @@ fn main() {
         "non_oblivious" => vec![4],
         "path_oram" => vec![5],
         "optimized" => vec![6],
+        "bubble" => vec![7],
         "all" => vec![1, 2, 3, 4, 5, 6],
         _ => panic!("invalid option: aggregation_alg"),
     };
@@ -312,15 +321,17 @@ fn main() {
     let eid = enclave.geteid();
 
     for aggregation_alg in aggregation_alg_list.iter() {
+        let optimized = format!("optimized-{}", optimal_num_of_clients);
         let alg_name = match *aggregation_alg {
             1 => "advanced",
             2 => "nips19",
             3 => "baseline",
             4 => "non_oblivious",
             5 => "path_oram",
-            6 => "optimized",
+            6 => optimized.as_str(),
+            7 => "bubble",
             _ => panic!("invalid option: aggregation_alg"),
-        };
+        };   
 
         let mut averages: Vec<f32> = vec![0.0; TIME_KIND + 1];
         for i in 0..(trial + 1) {
@@ -387,9 +398,14 @@ fn main() {
     result_table.printstd();
 
     let text = Utc::now().format("%Y%m%d%H%M%S%Z").to_string();
+    let aggregation_alg_name = if aggregation_alg == "optimized" {
+        format!("{}-{}", aggregation_alg, optimal_num_of_clients)
+    } else {
+        aggregation_alg.to_string()
+    };
     let out = File::create(format!(
         "results/{}-{}-{}-{}-{}.txt",
-        aggregation_alg, num_of_parameters, num_of_sparse_parameters, num_of_clients, text
+        aggregation_alg_name, num_of_parameters, num_of_sparse_parameters, num_of_clients, text
     ))
     .expect("Faled to create output file");
     result_table.to_csv(out).expect("Faled to output file");

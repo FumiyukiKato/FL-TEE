@@ -4,7 +4,7 @@
 - grpc server at `0.0.0.0:50051`
 
 
-When using the optimized algorithm, pay attention to the stack size of the host machine. `ulimit -s 100000`
+When using the optimized algorithm, pay attention to the stack size of the host machine. `ulimit -s 1000000`
 
 ### One shot aggregation test
 1. `make`
