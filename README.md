@@ -38,7 +38,7 @@ require host machine to set up linux-sgx and `export LD_LIBRARY_PATH=/opt/sgxsdk
 
 
 ## Setup Server
-1. setup [linux-sgx-driver](https://github.com/intel/linux-sgx-driver) and confirm `/dev/isgx` on host machine
+1. setup [linux-sgx-driver](https://github.com/intel/linux-sgx-driver) and confirm `/dev/isgx` on host machine (we user out-of-tree driver, but the Intel SGX driver is included in Linux kernel 5.11 and later)
 ```bash
 $ cd linux-sgx-driver/
 $ sudo make
