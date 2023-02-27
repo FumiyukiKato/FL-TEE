@@ -47,6 +47,7 @@ if __name__ == '__main__':
     rs_for_index_privacy = np.random.RandomState(args.seed + 3)
     rs_for_store_teacher_indices = np.random.RandomState(args.seed + 4)
     rs_for_gaussian_noise = np.random.RandomState(args.seed + 5)
+    rs_for_attacker_data = np.random.RandomState(args.seed + 6)
 
     train_dataset, test_dataset, user_groups, class_labels = get_dataset(
         args, path_project, args.num_of_label_k, args.random_num_label)
@@ -136,6 +137,14 @@ if __name__ == '__main__':
 
     # Initialize attacker
     if not is_secure_agg:
+        if args.attacker_data_size:
+            if args.dataset == 'mnist':
+                attacker_dataset = Attacker.mnist_test_sample_iid(test_dataset, args.attacker_data_size, rs_for_attacker_data)
+            else:
+                exit('Error: dataset must be MNIST for specified attackr_data_size')
+        else:
+            attacker_dataset = test_dataset
+        
         attacker = Attacker(
             args.epochs,
             num_of_params,
@@ -150,7 +159,7 @@ if __name__ == '__main__':
             device,
             args.verbose,
             args.attacker_batch_size,
-            test_dataset,
+            attacker_dataset,
             buffer_names)
 
     # Orders of RDP

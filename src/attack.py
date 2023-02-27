@@ -82,6 +82,17 @@ class Attacker(object):
         with open(os.path.join(file_path), mode="wb") as f:
             pickle.dump(self, f)
         print('save done.')
+    
+    @staticmethod        
+    def mnist_test_sample_iid(dataset, num_of_data, random_state):
+        label_set = set(dataset.test_labels.tolist())
+        sampled_test_dataset = []
+        for label in label_set:
+            per_label = [i for i in dataset.data[dataset.test_labels == label]]
+            for feature in random_state.choice(per_label, int(num_of_data / len(label_set)), replace=False):
+                sampled_test_dataset.append((feature, label))
+        random_state.shuffle(sampled_test_dataset)
+        return sampled_test_dataset
 
     @staticmethod
     def load_from_pickle(path_project, args):
@@ -669,7 +680,7 @@ def run_attack(
         acc_comp, acc_part, num, missing_labels  = calc_accuracy(target_client_ids, target_client_labels, inferred_result, args)
         show_attack_results(acc_comp, acc_part, num, missing_labels, args.epochs)
 
-    if prefix in ['exp1', 'exp2', 'exp3']:
+    if prefix in ['exp1', 'exp2', 'exp3', 'exp1-no-dp', 'exp2-no-dp', 'exp3-no-dp']:
         save_result(path_project, prefix,
                     [
                         args.dataset,
@@ -692,7 +703,7 @@ def run_attack(
                     ],
                     add=True
         )
-    elif prefix in ['exp4']:
+    elif prefix in ['exp4', 'exp4-no-dp']:
         for round, result in result_per_round.items():
             acc_comp, acc_part, num, missing_labels = result
             save_result(path_project, prefix,
@@ -718,7 +729,7 @@ def run_attack(
                         ],
                         add=True
             )
-    elif prefix in ['exp6']:
+    elif prefix in ['exp6', 'exp6-no-dp']:
         save_result(path_project, prefix,
                     [
                         args.dataset,
@@ -775,4 +786,33 @@ def run_attack(
                     ],
                     add=True
         )
-
+    elif prefix in ['exp10']:
+        save_result(path_project, prefix,
+                    [
+                        args.dataset,
+                        args.epochs,
+                        args.frac,
+                        args.num_users,
+                        args.num_of_label_k,
+                        args.random_num_label,
+                        args.model,
+                        args.alpha,
+                        args.attack,
+                        args.fixed_inference_number,
+                        args.single_model,
+                        args.attacker_batch_size,
+                        args.seed,
+                        args.protection,
+                        args.index_privacy_r,
+                        args.dp,
+                        args.epsilon,
+                        args.delta,
+                        args.sigma,
+                        args.attacker_data_size,
+                        acc_comp / (num - missing_labels),
+                        acc_part / num,
+                        missing_labels,
+                        num
+                    ],
+                    add=True
+        )
