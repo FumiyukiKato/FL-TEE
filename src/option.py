@@ -49,6 +49,7 @@ def args_parser():
     parser.add_argument('--index_privacy_r', type=float, default=None, help='the amount of random indices, r times (default: None)')
 
     # Attacker
+    parser.add_argument('--no_attack',              action='store_true',    help='attack is not conducted')
     parser.add_argument('--attack',                 type=str, default=None, help='clustering, nn (default: None)' , choices=['clustering', 'nn'])
     parser.add_argument('--attacker_data_size',     type=int, default=None, help='dataset size available for attacker (default: 10000 for MNIST, which is torchvision test dataset size)')
     parser.add_argument('--fixed_inference_number', type=int, default=None, help='number of inference label (default: None)')
