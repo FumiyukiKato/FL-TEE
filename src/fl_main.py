@@ -138,10 +138,12 @@ if __name__ == '__main__':
     # Initialize attacker
     if not is_secure_agg:
         if args.attacker_data_size:
-            if args.dataset == 'mnist':
-                attacker_dataset = Attacker.mnist_test_sample_iid(test_dataset, args.attacker_data_size, rs_for_attacker_data)
+            if args.dataset in ['mnist']:
+                attacker_dataset = Attacker.attacker_data_sample_mnist(test_dataset, args.attacker_data_size, rs_for_attacker_data)
+            elif args.dataset in ['purchase100']:
+                attacker_dataset = Attacker.attacker_data_sample_purchase100(test_dataset, args.attacker_data_size, rs_for_attacker_data)
             else:
-                exit('Error: dataset must be MNIST for specified attackr_data_size')
+                exit('Error: dataset must be specified')
         else:
             attacker_dataset = test_dataset
         

@@ -83,14 +83,36 @@ class Attacker(object):
             pickle.dump(self, f)
         print('save done.')
     
-    @staticmethod        
-    def mnist_test_sample_iid(dataset, num_of_data, random_state):
+    @staticmethod
+    def attacker_data_sample_mnist(dataset, num_of_data, random_state):
         label_set = set(dataset.test_labels.tolist())
+        test_dataset_per_label = { l: [] for l in label_set }
         sampled_test_dataset = []
+        if num_of_data < len(label_set):
+            exit('Error: attackr_data_size is too small')
+        for feature, label in dataset:
+            test_dataset_per_label[label].append((feature, label))
         for label in label_set:
-            per_label = [i for i in dataset.data[dataset.test_labels == label]]
-            for feature in random_state.choice(per_label, int(num_of_data / len(label_set)), replace=False):
-                sampled_test_dataset.append((feature, label))
+            sampled_idx = random_state.choice(len(test_dataset_per_label[label]), int(num_of_data / len(label_set)), replace=False)
+            sampled = np.array(test_dataset_per_label[label])[sampled_idx]
+            sampled_test_dataset.extend((sampled))
+        random_state.shuffle(sampled_test_dataset)
+        return sampled_test_dataset
+    
+    @staticmethod
+    def attacker_data_sample_purchase100(dataset, num_of_data, random_state):
+        label_set = set([l for _, l in dataset])
+        test_dataset_per_label = { l: [] for l in label_set }
+        sampled_test_dataset = []
+        if num_of_data < len(label_set):
+            exit('Error: attackr_data_size is too small')
+        for feature, label in dataset:
+            test_dataset_per_label[label].append((feature, label))
+        for label in label_set:
+            sample_size = min(int(num_of_data / len(label_set)), len(test_dataset_per_label[label]))
+            sampled_idx = random_state.choice(len(test_dataset_per_label[label]), sample_size, replace=False)
+            sampled = np.array(test_dataset_per_label[label])[sampled_idx]
+            sampled_test_dataset.extend((sampled))
         random_state.shuffle(sampled_test_dataset)
         return sampled_test_dataset
 
