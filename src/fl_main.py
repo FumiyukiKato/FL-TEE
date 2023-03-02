@@ -47,6 +47,7 @@ if __name__ == '__main__':
     rs_for_index_privacy = np.random.RandomState(args.seed + 3)
     rs_for_store_teacher_indices = np.random.RandomState(args.seed + 4)
     rs_for_gaussian_noise = np.random.RandomState(args.seed + 5)
+    rs_for_attacker_data = np.random.RandomState(args.seed + 6)
 
     train_dataset, test_dataset, user_groups, class_labels = get_dataset(
         args, path_project, args.num_of_label_k, args.random_num_label)
@@ -135,7 +136,17 @@ if __name__ == '__main__':
             print('train start')
 
     # Initialize attacker
-    if not is_secure_agg:
+    if not is_secure_agg and not args.no_attack:
+        if args.attacker_data_size:
+            if args.dataset in ['mnist']:
+                attacker_dataset = Attacker.attacker_data_sample_mnist(test_dataset, args.attacker_data_size, rs_for_attacker_data)
+            elif args.dataset in ['purchase100']:
+                attacker_dataset = Attacker.attacker_data_sample_purchase100(test_dataset, args.attacker_data_size, rs_for_attacker_data)
+            else:
+                exit('Error: dataset must be specified')
+        else:
+            attacker_dataset = test_dataset
+        
         attacker = Attacker(
             args.epochs,
             num_of_params,
@@ -150,7 +161,7 @@ if __name__ == '__main__':
             device,
             args.verbose,
             args.attacker_batch_size,
-            test_dataset,
+            attacker_dataset,
             buffer_names)
 
     # Orders of RDP
@@ -290,7 +301,7 @@ if __name__ == '__main__':
                             indices, over_k_indices)
                     else:
                         top_k_indices = indices
-                    if not is_secure_agg:
+                    if not args.no_attack:
                         attacker.store_target_indices(client_id, epoch, top_k_indices)
 
                 local_weights_diffs = top_k_local_weights_diffs
@@ -299,7 +310,7 @@ if __name__ == '__main__':
             else:
                 update_global_weights(global_weights, local_weights_diffs)
 
-        if not is_secure_agg:
+        if not is_secure_agg and not args.no_attack:
             # Observe top-k indices from global model of this round using test data
             attacker.store_teacher_indices(
                 epoch,
@@ -352,7 +363,7 @@ if __name__ == '__main__':
         print("|---- Test Accuracy: {:.2f}%".format(100 * test_acc))
 
     # Attack inference
-    if not is_secure_agg:
+    if not is_secure_agg and not args.no_attack:
         run_attack(path_project, args.prefix, attacker, target_client_ids, target_client_labels, args)
         print('\n Total Run Time: {0:0.4f}'.format(time.time() - start_time))
         attacker.save_pickle(path_project, args)
@@ -377,23 +388,32 @@ if __name__ == '__main__':
                         ],
                         add=True
             )
+    if args.no_attack:
         if args.prefix in ['exp9']:
                 save_result(path_project, args.prefix,
-                        [
-                            args.dataset,
-                            args.epochs,
-                            args.frac,
-                            args.num_users,
-                            args.num_of_label_k,
-                            args.random_num_label,
-                            args.model,
-                            args.alpha,
-                            args.seed,
-                            args.aggregation_alg,
-                            args.optimal_num_of_clients,
-                            args.protection,
-                            args.index_privacy_r,
-                            execution_time
-                        ],
+                    [
+                        args.dataset,
+                        args.epochs,
+                        args.frac,
+                        args.num_users,
+                        args.num_of_label_k,
+                        args.random_num_label,
+                        args.model,
+                        args.alpha,
+                        args.attack,
+                        args.fixed_inference_number,
+                        args.single_model,
+                        args.attacker_batch_size,
+                        args.seed,
+                        args.protection,
+                        args.index_privacy_r,
+                        args.dp,
+                        args.epsilon,
+                        args.delta,
+                        args.sigma,
+                        test_acc,
+                        test_loss,
+                        100 * train_accuracy[-1]
+                    ],
                         add=True
             )
