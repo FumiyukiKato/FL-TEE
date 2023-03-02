@@ -219,6 +219,6 @@ def client_level_dp_update_global_weights(global_weights, local_weights_diffs, s
     for key in w_avg.keys():
         for i in range(1, len_of_diffs):
             w_avg[key] += local_weights_diffs[i][key]
-        # noise = random_state.normal(0, float(clipping * alpha * sigma), size=w_avg[key].shape) # We are not sure to use k/d sensitivity in the case of top-k sparsification
+        # noise = random_state.normal(0, float(clipping * alpha * sigma), size=w_avg[key].shape) # cannot sure to use k/d sensitivity in the case of top-k sparsification
         noise = random_state.normal(0, float(clipping * sigma), size=w_avg[key].shape)
         global_weights[key] += torch.div(w_avg[key] + noise, len_of_diffs)
