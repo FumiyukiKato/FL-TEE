@@ -31,8 +31,6 @@ from update import (
     LocalUpdate,
     l2clipping,
     test_inference,
-    update_global_weights,
-    client_level_dp_update_global_weights,
     diff_weights,
     TRAIN_RATIO,
 )
@@ -328,6 +326,31 @@ def perturb_grad_ldpsgd(model, device, eps, L):
     return sample_vec
 
 
+def client_level_dp_update_global_weights(global_weights, sum_of_local_weights_diffs, sigma, clipping, num_users, random_state):
+    """Clipping and adding noise to global_weights
+        Perform clipping and noise addition for each layer, but note that this is not possible if the layer is sparse.
+
+    Args:
+        global_weights ([OrderedDict]): model.state_dict() , updated by side effects
+        local_weights_diffs [([OrderedDict])]: list of model.state_dict()
+        sigma (float): standard deviation of gaussian noise
+        clipping (int): clipping threshold
+    """
+    for key in sum_of_local_weights_diffs.keys():
+        noise = random_state.normal(0, float(clipping * sigma), size=sum_of_local_weights_diffs[key].shape)
+        global_weights[key] += torch.div(sum_of_local_weights_diffs[key] + noise, num_users)
+
+
+def update_global_weights(global_weights, sum_of_local_weights_diffs, num_users):
+    """Global weights will be updated by side effects"""
+    for key in sum_of_local_weights_diffs.keys():
+        sum_of_local_weights_diffs[key] = torch.div(sum_of_local_weights_diffs[key], num_users)
+        if key.endswith('num_batches_tracked'):  # downcast to float
+            global_weights[key] = global_weights[key].float()
+            sum_of_local_weights_diffs[key] = sum_of_local_weights_diffs[key].float()
+        global_weights[key] += sum_of_local_weights_diffs[key]
+
+
 def eval_fed_avg(
     seed,
     gpu_id,
@@ -383,7 +406,7 @@ def eval_fed_avg(
                 print("######## Excess setted privacy budget ########")
                 # break
 
-        local_weights_diffs, local_losses = [], []
+        sum_of_local_weights_diffs = {}
         global_model.train()
 
         idxs_users = client_iid(frac, num_users)
@@ -405,20 +428,24 @@ def eval_fed_avg(
             w, loss = local_model.update_weights(
                 model=copy.deepcopy(global_model), global_round=epoch
             )
-            local_weights_diffs.append(diff_weights(global_weights, w))
-            local_losses.append(copy.deepcopy(loss))
+            local_weights_diff = diff_weights(global_weights, w)
+            for key in local_weights_diff.keys():
+                if sum_of_local_weights_diffs.get(key) is not None:
+                    sum_of_local_weights_diffs[key] += local_weights_diff[key]
+                else:
+                    sum_of_local_weights_diffs[key] = local_weights_diff[key]
 
         if dp_kind == "cdp":
             client_level_dp_update_global_weights(
                 global_weights,
-                local_weights_diffs,
+                sum_of_local_weights_diffs,
                 sigma,
                 clipping,
-                None,
+                num_users,
                 rs_for_gaussian_noise,
             )
         elif dp_kind == "nodp":
-            update_global_weights(global_weights, local_weights_diffs)
+            update_global_weights(global_weights, sum_of_local_weights_diffs, num_users)
 
         global_model.load_state_dict(global_weights)
 
@@ -432,6 +459,7 @@ def eval_fed_avg(
             print(
                 "|---- Central DP : ({:.6f}, {:.6f})-DP".format(eps_spent, delta_spent)
             )
+
 
 
 def eval_fed_sgd(
