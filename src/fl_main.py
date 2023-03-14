@@ -319,7 +319,7 @@ if __name__ == '__main__':
                 args.index_privacy_r,
                 args.protection)
             
-        if not args.local_skip:   
+        if not args.local_skip:
             # Update global model
             global_model.load_state_dict(global_weights)
 
@@ -330,7 +330,7 @@ if __name__ == '__main__':
             list_acc, list_loss = [], []
             global_model.eval()
 
-            for c in range(args.num_users):
+            for idx in range(args.num_users):
                 local_model = LocalUpdate(
                     dataset=train_dataset,
                     idxs=user_groups[idx],
