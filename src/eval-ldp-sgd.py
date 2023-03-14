@@ -24,7 +24,6 @@ path_project = Path(os.path.abspath("."))
 DATA_SET_DIR = "dataset"
 
 import copy
-from utils import count_parameters
 from rdp_accountant import compute_rdp, get_privacy_spent
 from sampling import mnist_iid, mnist_noniid, mnist_noniid_unequal, client_iid
 from update import (
@@ -130,7 +129,7 @@ class CDPLocalUpdate(LocalUpdate):
         return trainloader, None
 
 
-class LDPLocalUpdate(LocalUpdate):
+class SVGLocalUpdate(LocalUpdate):
     def __init__(
         self, dataset, idxs, logger, device, optimizer, momentum, verbose, eps, L
     ):
@@ -168,7 +167,7 @@ class LDPLocalUpdate(LocalUpdate):
             loss.backward(retain_graph=True)
             if dp_kind == "ldp":
                 rand_grad = perturb_grad_ldpsgd(model, self.device, self.eps, self.L)
-            elif dp_kind == "nodp":
+            elif dp_kind in ["nodp", "cdp"]:
                 rand_grad = grad_sgd(model, self.device)
 
         return model, rand_grad
@@ -200,9 +199,9 @@ def update_server_model_by_local_grad_agg(
     base_model,
     mean_grad,
     dp_kind,
-    lr_central=1.0,
-    const_grad=1.0,
-    param_space_norm=1.0,
+    global_lr,
+    const_grad,
+    param_space_norm,
     scheduler=None,
     optimizer=None,
 ):
@@ -212,7 +211,7 @@ def update_server_model_by_local_grad_agg(
                 if optimizer is not None:
                     param.grad = mean_grad[name] * const_grad
                 else:
-                    param.data -= mean_grad[name] * lr_central * const_grad
+                    param.data -= mean_grad[name] * global_lr * const_grad
 
         if optimizer is not None:
             optimizer.step()
@@ -224,7 +223,7 @@ def update_server_model_by_local_grad_agg(
 
         return base_model
 
-    elif dp_kind == "nodp":
+    elif dp_kind in ["nodp", "cdp"]:
         for name, param in base_model.named_parameters():
             if param.requires_grad:
                 param.grad = mean_grad[name]
@@ -254,8 +253,6 @@ def grad_sgd(model, device):
     for name, param in model.named_parameters():
         if param.requires_grad:
             rand_grad[name] = param.grad.detach().clone()
-
-    model.zero_grad()
     return rand_grad
 
 
@@ -351,117 +348,6 @@ def update_global_weights(global_weights, sum_of_local_weights_diffs, num_users)
         global_weights[key] += sum_of_local_weights_diffs[key]
 
 
-def eval_fed_avg(
-    seed,
-    gpu_id,
-    logger,
-    num_users,
-    frac,
-    sigma,
-    clipping,
-    epochs,
-    epsilon,
-    delta,
-    local_bs,
-    optimizer,
-    local_lr,
-    local_ep,
-    momentum,
-    verbose,
-    dp_kind,
-):
-    if gpu_id:
-        torch.cuda.set_device(gpu_id)
-    device = "cuda" if gpu_id else "cpu"
-
-    print("DP: ", dp_kind)
-
-    global_model = MNIST_CNN()
-    global_model.to(device)
-    global_model.train()
-
-    global_weights = global_model.state_dict()
-    train_dataset, test_dataset, user_groups, class_labels = get_dataset(
-        path_project, num_users, True, num_users == 60000
-    )
-    rs_for_gaussian_noise = np.random.RandomState(seed)
-
-    # Training
-    global_test_result = []
-
-    # CDP
-    orders = (
-        [1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 3.0, 3.5, 4.0, 4.5]
-        + list(range(5, 64))
-        + [128, 256, 512]
-    )
-
-    for epoch in range(epochs):
-        if dp_kind == "cdp":
-            rdp = compute_rdp(frac, sigma, epoch + 1, orders)
-            eps_spent, delta_spent, opt_order = get_privacy_spent(
-                orders, rdp, target_delta=delta
-            )
-            if eps_spent > epsilon or delta_spent > delta:
-                print("######## Excess setted privacy budget ########")
-                # break
-
-        sum_of_local_weights_diffs = {}
-        global_model.train()
-
-        idxs_users = client_iid(frac, num_users)
-
-        for idx in idxs_users:
-            local_model = CDPLocalUpdate(
-                dataset=train_dataset,
-                idxs=user_groups[idx],
-                logger=logger,
-                device=device,
-                local_bs=local_bs,
-                optimizer=optimizer,
-                local_lr=local_lr,
-                local_ep=local_ep,
-                momentum=momentum,
-                verbose=verbose,
-            )
-
-            w, loss = local_model.update_weights(
-                model=copy.deepcopy(global_model), global_round=epoch
-            )
-            local_weights_diff = diff_weights(global_weights, w)
-            for key in local_weights_diff.keys():
-                if sum_of_local_weights_diffs.get(key) is not None:
-                    sum_of_local_weights_diffs[key] += local_weights_diff[key]
-                else:
-                    sum_of_local_weights_diffs[key] = local_weights_diff[key]
-
-        if dp_kind == "cdp":
-            client_level_dp_update_global_weights(
-                global_weights,
-                sum_of_local_weights_diffs,
-                sigma,
-                clipping,
-                num_users,
-                rs_for_gaussian_noise,
-            )
-        elif dp_kind == "nodp":
-            update_global_weights(global_weights, sum_of_local_weights_diffs, num_users)
-
-        global_model.load_state_dict(global_weights)
-
-        # Calculate avg training accuracy over all users at every epoch
-        global_model.eval()
-        test_acc, test_loss = test_inference(global_model, test_dataset, device)
-        print(f" \n Results after {epoch} ({epochs}) global rounds of training:")
-        print("|---- Test Accuracy: {:.2f}%".format(100 * test_acc))
-        global_test_result.append((test_acc, test_loss))
-        if dp_kind == "cdp":
-            print(
-                "|---- Central DP : ({:.6f}, {:.6f})-DP".format(eps_spent, delta_spent)
-            )
-
-
-
 def eval_fed_sgd(
     seed,
     gpu_id,
@@ -475,6 +361,10 @@ def eval_fed_sgd(
     eps_local,
     verbose,
     dp_kind,
+    global_lr,
+    clipping,
+    eps_global=None,
+    sigma=None,
 ):
     if gpu_id:
         torch.cuda.set_device(gpu_id)
@@ -493,6 +383,9 @@ def eval_fed_sgd(
 
     # Training
     global_test_result = []
+    L = None
+    param_space_norm = None
+    const_grad = None
 
     if dp_kind == "ldp":
         d = 0
@@ -504,21 +397,21 @@ def eval_fed_sgd(
         const_eps = (np.exp(eps_local) + 1) / (np.exp(eps_local) - 1)
         const_grad = L * np.sqrt(np.pi) * 0.5 * const_gamma * const_eps * d
         param_space_norm = L * const_eps * 0.75 * np.sqrt(np.pi) * np.sqrt(d)
-        lr_central = (
+        global_lr = (
             param_space_norm * np.sqrt(num_users) / (const_eps * L * np.sqrt(d)) * 0.05
         )
-
-    elif dp_kind == "nodp":
-        lr_central = 0.1
-        L = None
-        param_space_norm = None
-        const_grad = None
-
-    if dp_kind == "ldp":
         if param_space_norm > 0:
             global_model = l2projection(global_model, param_space_norm)
 
-    opt = optim.SGD(global_model.parameters(), lr=lr_central, momentum=0.0)
+    elif dp_kind == "cdp":
+        rs_for_gaussian_noise = np.random.RandomState(seed)
+        orders = (
+            [1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 3.0, 3.5, 4.0, 4.5]
+            + list(range(5, 64))
+            + [128, 256, 512]
+        )
+
+    opt = optim.SGD(global_model.parameters(), lr=global_lr, momentum=momentum)
     scheduler = optim.lr_scheduler.StepLR(opt, step_size=100, gamma=0.5)
 
     for epoch in range(epochs):
@@ -528,7 +421,7 @@ def eval_fed_sgd(
         mean_grad = dict()
 
         for idx in idxs_users:
-            local_model = LDPLocalUpdate(
+            local_model = SVGLocalUpdate(
                 dataset=train_dataset,
                 idxs=user_groups[idx],
                 logger=logger,
@@ -542,6 +435,11 @@ def eval_fed_sgd(
             model, rand_grad = local_model.update_weights(
                 model=copy.deepcopy(global_model), dp_kind=dp_kind
             )
+            if dp_kind == "cdp":
+                torch.nn.utils.clip_grad_norm_(model.parameters(), clipping)
+                for tensor_name, tensor in model.named_parameters():
+                    if tensor.requires_grad:
+                        rand_grad[tensor_name] = tensor.grad.detach().clone()
 
             for name in rand_grad.keys():
                 if mean_grad.get(name) is None:
@@ -550,15 +448,16 @@ def eval_fed_sgd(
                     mean_grad[name] += rand_grad[name]
 
         for name in mean_grad.keys():
+            if dp_kind == "cdp":
+                noise = torch.from_numpy(rs_for_gaussian_noise.normal(0, float(clipping * sigma), size=mean_grad[name].shape)).to(device)
+                mean_grad[name] += noise
             mean_grad[name] /= len(idxs_users)
-
-        # print(mean_grad[name] * const_grad * lr_central)
 
         global_model = update_server_model_by_local_grad_agg(
             global_model,
             mean_grad,
             dp_kind,
-            lr_central=lr_central,
+            global_lr=global_lr,
             optimizer=opt,
             const_grad=const_grad,
             scheduler=scheduler,
@@ -566,9 +465,10 @@ def eval_fed_sgd(
         )
 
         test_acc, test_loss = test_inference(global_model, test_dataset, device)
-        print(f" \n Results after {epoch} ({epochs}) global rounds of training:")
+        print(f" \n Results after {epoch+1} ({epochs}) global rounds of training:")
         print("|---- Test Accuracy: {:.2f}%".format(100 * test_acc))
         global_test_result.append((epoch, test_acc, test_loss))
+
         if dp_kind == "ldp":
             individual_delta = (delta / 2.0) / (epoch + 1)
             shuffle_dp_eps = compute_shuffle_DP(
@@ -577,6 +477,16 @@ def eval_fed_sgd(
             print(
                 "|---- Shuffle DP : ({:.6f}, {:.6f})-DP".format(shuffle_dp_eps, delta)
             )
+        elif dp_kind == "cdp":
+            rdp = compute_rdp(frac, sigma, epoch + 1, orders)
+            eps_spent, delta_spent, opt_order = get_privacy_spent(
+                orders, rdp, target_delta=delta
+            )
+            print(
+                "|---- Central DP : ({:.6f}, {:.6f})-DP".format(eps_spent, delta_spent)
+            )
+            if eps_spent > eps_global or delta_spent > delta:
+                print("|----  ######## Excess setted privacy budget ########")
 
     f = open(f"results/fedsgd-{dp_kind}-{eps_local}.txt", "w")
     f.write(str(global_test_result))
@@ -594,65 +504,42 @@ if __name__ == "__main__":
     parser.add_argument("--num_users", type=int, default=60000)
     parser.add_argument("--frac", type=float, default=1.0)
     parser.add_argument("--epochs", type=int, default=300)
+    parser.add_argument("--epsilon", type=float, default=5.0)
     parser.add_argument("--delta", type=float, default=0.00001)
     parser.add_argument("--clipping", type=float, default=1.0)
     parser.add_argument("--eps_central", type=float, default=5.0)
     parser.add_argument("--optimizer", type=str, default="sgd")
+    parser.add_argument("--global_lr", type=float, default=0.01)
     parser.add_argument("--eps_local", type=float, default=1.9)
-    parser.add_argument("--sigma", type=float, default=1.12)
+    parser.add_argument("--sigma", type=float, default=2.5)
     parser.add_argument("--local_bs", type=int, default=10)
     parser.add_argument("--local_lr", type=float, default=0.01)
     parser.add_argument("--local_ep", type=int, default=10)
-    parser.add_argument("--momentum", type=float, default=0.5)
+    parser.add_argument("--momentum", type=float, default=0.0)
     parser.add_argument("--dp_kind", type=str, default="ldp", metavar="ldp, nodp, cdp")
-    parser.add_argument(
-        "--method", type=str, default="fedsgd", metavar="fedsgd / fedavg"
-    )
     args = parser.parse_args()
 
     logger = SummaryWriter(os.path.join(path_project, "log"))
 
-    if args.method == "fedsgd":
-        if args.dp_kind in ["ldp", "nodp"]:
-            eval_fed_sgd(
-                seed=args.seed,
-                gpu_id=args.gpu_id,
-                logger=logger,
-                num_users=args.num_users,
-                frac=args.frac,
-                epochs=args.epochs,
-                delta=args.delta,
-                optimizer="sgd",
-                momentum=0.0,
-                eps_local=args.eps_local,
-                verbose=False,
-                dp_kind=args.dp_kind,
-            )
-        else:
-            exit("Error: dp_kind must be ldp, nodp for fedsvg")
-
-    elif args.method == "fedavg":
-        if args.dp_kind in ["cdp", "nodp"]:
-            eval_fed_avg(
-                seed=args.seed,
-                gpu_id=args.gpu_id,
-                logger=logger,
-                num_users=args.num_users,
-                frac=args.frac,
-                epochs=args.epochs,
-                sigma=args.sigma,
-                clipping=args.clipping,
-                epsilon=args.eps_central,
-                delta=args.delta,
-                local_bs=1,
-                local_ep=5,
-                local_lr=args.local_lr,
-                optimizer="sgd",
-                momentum=args.momentum,
-                verbose=False,
-                dp_kind=args.dp_kind,
-            )
-        else:
-            exit("Error: dp_kind must be cdp, nodp for fedavg")
+    if args.dp_kind in ["ldp", "nodp", "cdp"]:
+        eval_fed_sgd(
+            seed=args.seed,
+            gpu_id=args.gpu_id,
+            logger=logger,
+            num_users=args.num_users,
+            frac=args.frac,
+            epochs=args.epochs,
+            delta=args.delta,
+            optimizer="sgd",
+            momentum=args.momentum,
+            eps_local=args.eps_local,
+            verbose=False,
+            dp_kind=args.dp_kind,
+            global_lr=args.global_lr,
+            clipping=args.clipping,
+            eps_global=args.epsilon,
+            sigma=args.sigma,
+        )
     else:
-        exit("Error: no method")
+        exit("Error: dp_kind must be ldp, nodp for fedsvg")
+

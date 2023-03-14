@@ -6,13 +6,13 @@ set -ex
 ## mnist
 # variable-number, mlp
 # nn
-python src/fl_main.py --model=mlp --dataset=mnist --epochs=30 --seed=0 --frac=0.1 --num_users=1000 --data_dist=non-IID --optimizer=sgd --alpha=0.1 --attack=nn --num_of_label_k=3 --fixed_inference_number=3 --no_attack --prefix=exp9
-python src/fl_main.py --model=mlp --dp --sigma=0.5 --epsilon=5.0 --delta=0.5 --dataset=mnist --epochs=30 --seed=0 --frac=0.1 --num_users=1000 --data_dist=non-IID --optimizer=sgd --alpha=0.1 --attack=nn --num_of_label_k=3 --fixed_inference_number=3 --no_attack --prefix=exp9
-python src/fl_main.py --model=mlp --dp --sigma=1.0 --epsilon=5.0 --delta=0.5 --dataset=mnist --epochs=30 --seed=0 --frac=0.1 --num_users=1000 --data_dist=non-IID --optimizer=sgd --alpha=0.1 --attack=nn --num_of_label_k=3 --fixed_inference_number=3 --no_attack --prefix=exp9
-python src/fl_main.py --model=mlp --dp --sigma=2.0 --epsilon=5.0 --delta=0.5 --dataset=mnist --epochs=30 --seed=0 --frac=0.1 --num_users=1000 --data_dist=non-IID --optimizer=sgd --alpha=0.1 --attack=nn --num_of_label_k=3 --fixed_inference_number=3 --no_attack --prefix=exp9
-python src/fl_main.py --model=mlp --dp --sigma=4.0 --epsilon=5.0 --delta=0.5 --dataset=mnist --epochs=30 --seed=0 --frac=0.1 --num_users=1000 --data_dist=non-IID --optimizer=sgd --alpha=0.1 --attack=nn --num_of_label_k=3 --fixed_inference_number=3 --no_attack --prefix=exp9
-python src/fl_main.py --model=mlp --dp --sigma=8.0 --epsilon=5.0 --delta=0.5 --dataset=mnist --epochs=30 --seed=0 --frac=0.1 --num_users=1000 --data_dist=non-IID --optimizer=sgd --alpha=0.1 --attack=nn --num_of_label_k=3 --fixed_inference_number=3 --no_attack --prefix=exp9
-python src/fl_main.py --model=mlp --dp --sigma=16.0 --epsilon=5.0 --delta=0.5 --dataset=mnist --epochs=30 --seed=0 --frac=0.1 --num_users=1000 --data_dist=non-IID --optimizer=sgd --alpha=0.1 --attack=nn --num_of_label_k=3 --fixed_inference_number=3 --no_attack --prefix=exp9
+python src/fl_main.py --model=mlp --dataset=mnist --epochs=300 --seed=0 --frac=0.1 --num_users=1000 --data_dist=non-IID --optimizer=sgd --alpha=0.1 --attack=nn --num_of_label_k=3 --fixed_inference_number=3 --no_attack --prefix=exp9
+python src/fl_main.py --model=mlp --dp --sigma=0.5 --epsilon=5.0 --delta=0.5 --dataset=mnist --epochs=300 --seed=0 --frac=0.1 --num_users=1000 --data_dist=non-IID --optimizer=sgd --alpha=0.1 --attack=nn --num_of_label_k=3 --fixed_inference_number=3 --no_attack --prefix=exp9
+python src/fl_main.py --model=mlp --dp --sigma=1.0 --epsilon=5.0 --delta=0.5 --dataset=mnist --epochs=300 --seed=0 --frac=0.1 --num_users=1000 --data_dist=non-IID --optimizer=sgd --alpha=0.1 --attack=nn --num_of_label_k=3 --fixed_inference_number=3 --no_attack --prefix=exp9
+python src/fl_main.py --model=mlp --dp --sigma=2.0 --epsilon=5.0 --delta=0.5 --dataset=mnist --epochs=300 --seed=0 --frac=0.1 --num_users=1000 --data_dist=non-IID --optimizer=sgd --alpha=0.1 --attack=nn --num_of_label_k=3 --fixed_inference_number=3 --no_attack --prefix=exp9
+python src/fl_main.py --model=mlp --dp --sigma=4.0 --epsilon=5.0 --delta=0.5 --dataset=mnist --epochs=300 --seed=0 --frac=0.1 --num_users=1000 --data_dist=non-IID --optimizer=sgd --alpha=0.1 --attack=nn --num_of_label_k=3 --fixed_inference_number=3 --no_attack --prefix=exp9
+python src/fl_main.py --model=mlp --dp --sigma=8.0 --epsilon=5.0 --delta=0.5 --dataset=mnist --epochs=300 --seed=0 --frac=0.1 --num_users=1000 --data_dist=non-IID --optimizer=sgd --alpha=0.1 --attack=nn --num_of_label_k=3 --fixed_inference_number=3 --no_attack --prefix=exp9
+python src/fl_main.py --model=mlp --dp --sigma=16.0 --epsilon=5.0 --delta=0.5 --dataset=mnist --epochs=300 --seed=0 --frac=0.1 --num_users=1000 --data_dist=non-IID --optimizer=sgd --alpha=0.1 --attack=nn --num_of_label_k=3 --fixed_inference_number=3 --no_attack --prefix=exp9
 
 
 # ## cifar10

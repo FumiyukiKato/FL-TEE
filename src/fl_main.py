@@ -107,10 +107,8 @@ if __name__ == '__main__':
 
     # Training
     train_loss, train_accuracy = [], []
-    val_acc_list, net_list = [], []
-    cv_loss, cv_acc = [], []
-    print_every = 1
-    val_loss_pre, counter = 0, 0
+    test_loss_list = []
+    print_every = 20 # print training accuracy for each {print_every} epochs
 
     # Target clients
     target_client_ids = list(range(0, args.num_users))
@@ -184,15 +182,6 @@ if __name__ == '__main__':
 
     for epoch in range(args.epochs):
         print(f' | Global Training Round : {epoch + 1} |')
-
-        if args.dp:
-            rdp = compute_rdp(args.frac, args.sigma, epoch + 1, orders)
-            eps_spent, delta_spent, opt_order = get_privacy_spent(
-                orders, rdp, target_eps=args.epsilon)
-            print(f'(epsilon, delta) = ({eps_spent}, {delta_spent})')
-            if eps_spent > args.epsilon or delta_spent > args.delta:
-                print("######## Excess setted privacy budget ########")
-                break
 
         local_weights_diffs, local_losses = [], []
 
@@ -326,41 +315,51 @@ if __name__ == '__main__':
             loss_avg = sum(local_losses) / len(local_losses)
             train_loss.append(loss_avg)
 
-            # Calculate avg training accuracy over all users at every epoch
-            list_acc, list_loss = [], []
-            global_model.eval()
-
-            for idx in range(args.num_users):
-                local_model = LocalUpdate(
-                    dataset=train_dataset,
-                    idxs=user_groups[idx],
-                    logger=logger,
-                    device=device,
-                    local_bs=args.local_bs,
-                    optimizer=args.optimizer,
-                    lr=args.lr,
-                    local_ep=args.local_ep,
-                    momentum=args.momentum,
-                    verbose=args.verbose)
-                acc, loss = local_model.inference(model=global_model)
-                list_acc.append(acc)
-                list_loss.append(loss)
-                train_accuracy.append(sum(list_acc) / len(list_acc))
-
-            # print global training loss after every 'i' rounds
             if (epoch + 1) % print_every == 0:
+                # Calculate avg training accuracy over all users at every epoch
+                list_acc, list_loss = [], []
+                global_model.eval()
+
+                for idx in range(args.num_users):
+                    local_model = LocalUpdate(
+                        dataset=train_dataset,
+                        idxs=user_groups[idx],
+                        logger=logger,
+                        device=device,
+                        local_bs=args.local_bs,
+                        optimizer=args.optimizer,
+                        lr=args.lr,
+                        local_ep=args.local_ep,
+                        momentum=args.momentum,
+                        verbose=args.verbose)
+                    acc, loss = local_model.inference(model=global_model)
+                    list_acc.append(acc)
+                    list_loss.append(loss)
+                    train_accuracy.append(sum(list_acc) / len(list_acc))
+
+                # print global training loss after every 'i' rounds
                 print(f' Avg Training Stats after {epoch+1} global rounds:')
-                print(f'Training Loss : {np.mean(np.array(train_loss))}')
-                print('Train Accuracy: {:.2f}% \n'.format(
-                    100 * train_accuracy[-1]))
+                print(f'    Avg Training Loss: {np.mean(np.array(train_loss))}')
+                print('    Avg Train Accuracy: {:.2f}% \n'.format(100 * train_accuracy[-1]))
 
-    if not args.local_skip:
-        # Test inference after completion of training
-        test_acc, test_loss = test_inference(global_model, test_dataset, device)
+        if not args.local_skip:
+            # Test inference after completion of training
+            test_acc, test_loss = test_inference(global_model, test_dataset, device)
+            test_loss_list.append(test_loss)
 
-        print(f' \n Results after {args.epochs} global rounds of training:')
-        print("|---- Avg Train Accuracy: {:.2f}%".format(100 * train_accuracy[-1]))
-        print("|---- Test Accuracy: {:.2f}%".format(100 * test_acc))
+            print(f" \n Results after {epoch+1} ({args.epochs}) global rounds of training:")
+            print("|---- Test Accuracy: {:.2f}%".format(100 * test_acc))
+            print("|---- Test Loss: {:.8f}".format(test_loss))
+            if args.dp:
+                rdp = compute_rdp(args.frac, args.sigma, epoch + 1, orders)
+                eps_spent, delta_spent, opt_order = get_privacy_spent(
+                    orders, rdp, target_delta=args.delta
+                )
+                print(
+                    "|---- Central DP : ({:.6f}, {:.6f})-DP".format(eps_spent, delta_spent)
+                )
+                if eps_spent > args.epsilon or delta_spent > args.delta:
+                    print("|----  ######## Excess setted privacy budget ########")
 
     # Attack inference
     if not is_secure_agg and not args.no_attack:
@@ -412,8 +411,7 @@ if __name__ == '__main__':
                         args.delta,
                         args.sigma,
                         test_acc,
-                        test_loss,
-                        100 * train_accuracy[-1]
+                        test_loss_list,
                     ],
                         add=True
             )
