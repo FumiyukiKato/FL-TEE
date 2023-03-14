@@ -136,7 +136,7 @@ if __name__ == '__main__':
             print('train start')
 
     # Initialize attacker
-    if not is_secure_agg:
+    if not is_secure_agg and not args.no_attack:
         if args.attacker_data_size:
             if args.dataset in ['mnist']:
                 attacker_dataset = Attacker.attacker_data_sample_mnist(test_dataset, args.attacker_data_size, rs_for_attacker_data)
@@ -301,7 +301,7 @@ if __name__ == '__main__':
                             indices, over_k_indices)
                     else:
                         top_k_indices = indices
-                    if not is_secure_agg:
+                    if not args.no_attack:
                         attacker.store_target_indices(client_id, epoch, top_k_indices)
 
                 local_weights_diffs = top_k_local_weights_diffs
@@ -310,7 +310,7 @@ if __name__ == '__main__':
             else:
                 update_global_weights(global_weights, local_weights_diffs)
 
-        if not is_secure_agg:
+        if not is_secure_agg and not args.no_attack:
             # Observe top-k indices from global model of this round using test data
             attacker.store_teacher_indices(
                 epoch,
@@ -319,7 +319,7 @@ if __name__ == '__main__':
                 args.index_privacy_r,
                 args.protection)
             
-        if not args.local_skip:   
+        if not args.local_skip:
             # Update global model
             global_model.load_state_dict(global_weights)
 
@@ -330,7 +330,7 @@ if __name__ == '__main__':
             list_acc, list_loss = [], []
             global_model.eval()
 
-            for c in range(args.num_users):
+            for idx in range(args.num_users):
                 local_model = LocalUpdate(
                     dataset=train_dataset,
                     idxs=user_groups[idx],
@@ -363,7 +363,7 @@ if __name__ == '__main__':
         print("|---- Test Accuracy: {:.2f}%".format(100 * test_acc))
 
     # Attack inference
-    if not is_secure_agg:
+    if not is_secure_agg and not args.no_attack:
         run_attack(path_project, args.prefix, attacker, target_client_ids, target_client_labels, args)
         print('\n Total Run Time: {0:0.4f}'.format(time.time() - start_time))
         attacker.save_pickle(path_project, args)
@@ -388,23 +388,32 @@ if __name__ == '__main__':
                         ],
                         add=True
             )
+    if args.no_attack:
         if args.prefix in ['exp9']:
                 save_result(path_project, args.prefix,
-                        [
-                            args.dataset,
-                            args.epochs,
-                            args.frac,
-                            args.num_users,
-                            args.num_of_label_k,
-                            args.random_num_label,
-                            args.model,
-                            args.alpha,
-                            args.seed,
-                            args.aggregation_alg,
-                            args.optimal_num_of_clients,
-                            args.protection,
-                            args.index_privacy_r,
-                            execution_time
-                        ],
+                    [
+                        args.dataset,
+                        args.epochs,
+                        args.frac,
+                        args.num_users,
+                        args.num_of_label_k,
+                        args.random_num_label,
+                        args.model,
+                        args.alpha,
+                        args.attack,
+                        args.fixed_inference_number,
+                        args.single_model,
+                        args.attacker_batch_size,
+                        args.seed,
+                        args.protection,
+                        args.index_privacy_r,
+                        args.dp,
+                        args.epsilon,
+                        args.delta,
+                        args.sigma,
+                        test_acc,
+                        test_loss,
+                        100 * train_accuracy[-1]
+                    ],
                         add=True
             )
