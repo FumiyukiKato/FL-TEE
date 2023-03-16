@@ -182,9 +182,10 @@ def compute_shuffle_DP(num_users, eps_local, delta, k, delta_global):
     numerical_upperbound_eps = CA.numericalanalysis(
         num_users, eps_local, delta, num_iterations, step, True
     )
+    return advanced_composition(numerical_upperbound_eps, delta, k, delta_global)
 
+def advanced_composition(e, delta, k, delta_global):
     # advanced composition followed by https://arxiv.org/pdf/2001.03618.pdf
-    e = numerical_upperbound_eps
     delta_dash = delta_global - k * delta
     if delta_dash < 0:
         print("##### Delta must be positive")
@@ -372,7 +373,8 @@ def eval_fed_sgd(
     print("DP: ", dp_kind)
     if dp_kind == "ldp":
         print(f"    {eps_local}-LDP for local randomizer")
-
+    elif dp_kind == "cdp":
+        print(f"    noise multiplier {sigma} ")
     global_model = MNIST_CNN()
     global_model.to(device)
     global_model.train()
@@ -478,17 +480,27 @@ def eval_fed_sgd(
                 "|---- Shuffle DP : ({:.6f}, {:.6f})-DP".format(shuffle_dp_eps, delta)
             )
         elif dp_kind == "cdp":
+            individual_delta = (delta / 2.0) / (epoch + 1)
+            gauss_eps = clipping / sigma * np.sqrt(2 * np.log(1.25 / individual_delta))
+            cdp_eps = advanced_composition(gauss_eps, individual_delta, epoch + 1, delta)
+            print(
+                "|---- Central DP (Advanced Comp) : ({:.6f}, {:.6f})-DP".format(cdp_eps, delta)
+            )
+
             rdp = compute_rdp(frac, sigma, epoch + 1, orders)
             eps_spent, delta_spent, opt_order = get_privacy_spent(
                 orders, rdp, target_delta=delta
             )
             print(
-                "|---- Central DP : ({:.6f}, {:.6f})-DP".format(eps_spent, delta_spent)
+                "|---- Central DP (RDP) : ({:.6f}, {:.6f})-DP".format(eps_spent, delta_spent)
             )
             if eps_spent > eps_global or delta_spent > delta:
                 print("|----  ######## Excess setted privacy budget ########")
 
-    f = open(f"results/fedsgd-{dp_kind}-{eps_local}.txt", "w")
+    timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S') 
+    f = open(path_project / "exp" / "results" / f'fedsgd-{dp_kind}-{timestamp}.txt', "w")
+    f.write(str(args))
+    f.write('\n')
     f.write(str(global_test_result))
     f.close()
     print("done.")

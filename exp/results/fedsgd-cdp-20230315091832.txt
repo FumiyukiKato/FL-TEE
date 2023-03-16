@@ -1,0 +1,2 @@
+Namespace(seed=0, gpu_id=None, num_users=60000, frac=1.0, epochs=1, epsilon=5.0, delta=1e-05, clipping=1.0, eps_central=5.0, optimizer='sgd', global_lr=5.0, eps_local=1.9, sigma=5.0, local_bs=10, local_lr=0.01, local_ep=10, momentum=0.0, dp_kind='cdp')
+[(0, 0.3079, 688.901805639267)]
