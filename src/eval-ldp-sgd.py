@@ -469,7 +469,7 @@ def eval_fed_sgd(
         test_acc, test_loss = test_inference(global_model, test_dataset, device)
         print(f" \n Results after {epoch+1} ({epochs}) global rounds of training:")
         print("|---- Test Accuracy: {:.2f}%".format(100 * test_acc))
-        global_test_result.append((epoch, test_acc, test_loss))
+        global_test_result.append([epoch, test_acc, test_loss])
 
         if dp_kind == "ldp":
             individual_delta = (delta / 2.0) / (epoch + 1)
@@ -479,6 +479,7 @@ def eval_fed_sgd(
             print(
                 "|---- Shuffle DP : ({:.6f}, {:.6f})-DP".format(shuffle_dp_eps, delta)
             )
+            global_test_result[-1].append(shuffle_dp_eps)
         elif dp_kind == "cdp":
             individual_delta = (delta / 2.0) / (epoch + 1)
             gauss_eps = clipping / sigma * np.sqrt(2 * np.log(1.25 / individual_delta))
@@ -494,6 +495,7 @@ def eval_fed_sgd(
             print(
                 "|---- Central DP (RDP) : ({:.6f}, {:.6f})-DP".format(eps_spent, delta_spent)
             )
+            global_test_result[-1].append(eps_spent)
             if eps_spent > eps_global or delta_spent > delta:
                 print("|----  ######## Excess setted privacy budget ########")
 
