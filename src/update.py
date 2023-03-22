@@ -69,7 +69,7 @@ class LocalUpdate(object):
             shuffle=True)
         testloader = DataLoader(
             DatasetSplit(dataset, idxs_test),
-            batch_size=max(1, int(len(idxs_test) * 0.1)),
+            batch_size=max(1, int(len(idxs_test) * TEST_RATIO)),
             shuffle=False)
         return trainloader, testloader
 
