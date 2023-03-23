@@ -528,7 +528,7 @@ def eval_fed_sgd(
 if __name__ == "__main__":
     # parse argument
     parser = argparse.ArgumentParser(
-        description="DP-SGD (Local)", formatter_class=argparse.RawTextHelpFormatter
+        description="Experiment on LDP-FL and CDP-FL and Shuffle-FL", formatter_class=argparse.RawTextHelpFormatter
     )
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--gpu_id", type=str, default=None)
