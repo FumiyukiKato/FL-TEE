@@ -1,3 +1,20 @@
+"""
+USAGE:
+
+LDP-FL and Shuffle FL are based on the paper
+Úlfar Erlingsson, Vitaly Feldman, Ilya Mironov, Ananth Raghunathan, Shuang Song, Kunal Talwar, and Abhradeep Thakurta. 2020. Encode, shuffle, analyze privacy revisited: Formalizations and empirical evaluation. arXiv preprint arXiv:2001.03618 (2020).
+
+LDP-FL
+as well as including Shuffle FL analysis
+$ python src/eval-ldp-sgd.py --dp_kind=ldp --eps_local=2.0 --epochs=1500
+
+CDP-FL (DP-FedSGD)
+$ python src/eval-ldp-sgd.py --dp_kind=cdp --sigma=50.0 --global_lr=1.0 --epochs=500
+
+Plain FL (FedSGD)
+$ python src/eval-ldp-sgd.py --dp_kind=nodp --global_lr=0.1 --epochs=300 
+"""
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -511,7 +528,7 @@ def eval_fed_sgd(
 if __name__ == "__main__":
     # parse argument
     parser = argparse.ArgumentParser(
-        description="DP-SGD (Local)", formatter_class=argparse.RawTextHelpFormatter
+        description="Experiment on LDP-FL and CDP-FL and Shuffle-FL", formatter_class=argparse.RawTextHelpFormatter
     )
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--gpu_id", type=str, default=None)
